@@ -2,1158 +2,2265 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MS-DOS JEOPARDY // NORTON DEFRAG EDITION</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MS-DOS DEFRAG JEOPARDY v4.0</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
-  <!-- SOCKET.IO CLIENT -->
+  <!-- SOCKET.IO CLIENT FOR RENDER MULTIPLAYER -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  
   <style>
     :root {
-      --dos-bg: #0000a8;
-      --dos-fg: #ffffff;
-      --dos-cyan: #55ffff;
-      --dos-yellow: #ffff55;
-      --dos-red: #ff5555;
-      --dos-green: #55ff55;
-      --dos-gray: #b0b0b0;
-      --dos-dark-gray: #555555;
-      --dos-shadow: #000055;
-      --dos-black: #000000;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Share Tech Mono', 'Courier New', monospace;
-      -webkit-font-smoothing: antialiased;
-      user-select: none;
+      --dos-blue: #0000A8;
+      --dos-dark-blue: #000068;
+      --dos-cyan: #55FFFF;
+      --dos-yellow: #FFFF55;
+      --dos-white: #FFFFFF;
+      --dos-grey: #AAAAAA;
+      --dos-dark-grey: #555555;
+      --dos-ribbon: #B0B0B0;
+      --dos-red: #FF4444;
+      --dos-magenta: #FF55FF;
+      --dos-green: #55FF55;
     }
 
     body {
-      background-color: var(--dos-bg);
-      color: var(--dos-fg);
-      height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      position: relative;
+      background-color: var(--dos-blue);
+      color: var(--dos-white);
+      font-family: 'Share Tech Mono', 'VT323', monospace;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-font-smoothing: none;
+      overflow-x: hidden;
     }
 
-    /* CRT Monitor Scanline effect */
-    body::before {
+    /* Subtle CRT Scanline overlay */
+    .crt::after {
       content: " ";
       display: block;
       position: fixed;
       top: 0; left: 0; bottom: 0; right: 0;
-      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-      z-index: 9999;
-      background-size: 100% 3px, 6px 100%;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      z-index: 99;
+      background-size: 100% 3px, 3px 100%;
       pointer-events: none;
+      opacity: 0.6;
     }
 
-    /* Top System Ribbon (Norton Defrag Menu Style) */
-    .top-ribbon {
-      background-color: var(--dos-gray);
-      color: var(--dos-black);
-      padding: 2px 10px;
-      font-size: 13px;
-      font-weight: bold;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid var(--dos-fg);
-      flex-shrink: 0;
-      height: 28px;
-    }
-
-    .top-ribbon .nav-group {
-      display: flex;
-      gap: 15px;
-      align-items: center;
-    }
-
-    .top-ribbon .menu-item {
-      cursor: pointer;
-      padding: 0 4px;
-    }
-
-    .top-ribbon .menu-item:hover {
-      background: var(--dos-black);
-      color: var(--dos-fg);
-    }
-
-    .ribbon-select {
-      background: var(--dos-black);
-      color: var(--dos-yellow);
-      border: 1px solid var(--dos-dark-gray);
-      font-size: 11px;
-      padding: 1px 4px;
-      font-family: inherit;
-      outline: none;
-      cursor: pointer;
-    }
-
-    .ribbon-input {
-      background: var(--dos-black);
-      color: var(--dos-cyan);
-      border: 1px solid var(--dos-dark-gray);
-      font-size: 11px;
-      padding: 1px 6px;
-      width: 100px;
-      font-family: inherit;
-      outline: none;
-    }
-
-    /* Norton Box Framing */
+    /* Authentic DOS UI boxes */
     .dos-box {
-      border: 2px solid var(--dos-fg);
-      background: var(--dos-bg);
-      position: relative;
-      padding: 8px;
+      border: 2px solid var(--dos-cyan);
+      box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.65);
+      background-color: var(--dos-blue);
     }
 
-    .dos-box-title {
-      position: absolute;
-      top: -9px;
-      left: 10px;
-      background: var(--dos-bg);
-      padding: 0 4px;
-      color: var(--dos-cyan);
-      font-weight: bold;
-      font-size: 12px;
-      letter-spacing: 1px;
+    .dos-box-white {
+      border: 2px solid var(--dos-white);
+      box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.65);
+      background-color: var(--dos-blue);
     }
 
-    /* Workspace Layout */
-    .workspace {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 6px 10px;
-      gap: 6px;
-      overflow: hidden;
+    .dos-box-yellow {
+      border: 2px solid var(--dos-yellow);
+      box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.65);
+      background-color: var(--dos-blue);
     }
 
-    .main-grid-row {
-      flex: 1;
-      display: grid;
-      grid-template-columns: 210px 1fr 210px;
-      gap: 8px;
-      min-height: 0;
+    .dos-box-red {
+      border: 2px solid var(--dos-red);
+      box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.65);
+      background-color: var(--dos-blue);
     }
 
-    /* Left Column */
-    .side-col {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .legend-content {
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .legend-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .block-sample {
-      width: 14px;
-      height: 14px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-    }
-
-    /* Center Jeopardy Grid */
-    .cluster-field-container {
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    .scanline-header {
-      background: #000055;
-      border: 1px solid var(--dos-cyan);
-      padding: 2px 6px;
-      font-size: 11px;
-      color: var(--dos-yellow);
-      margin-bottom: 4px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .jeopardy-grid {
-      flex: 1;
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 4px;
-      min-height: 0;
-    }
-
-    .category-header {
-      background: var(--dos-gray);
-      color: var(--dos-black);
-      border: 1px solid var(--dos-fg);
-      text-align: center;
-      padding: 6px 2px;
-      font-size: 12px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-transform: uppercase;
-      box-shadow: 2px 2px 0px var(--dos-black);
-      height: 48px;
-    }
-
-    .cluster-tile {
-      background: #000088;
-      border: 2px solid var(--dos-fg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--dos-yellow);
-      font-size: 26px;
-      font-family: 'VT323', monospace;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 2px 2px 0px var(--dos-shadow);
-      transition: background 0.1s;
-    }
-
-    .cluster-tile:hover {
-      background: var(--dos-yellow);
-      color: var(--dos-black);
-    }
-
-    .cluster-tile.cleared {
-      background: #000044;
-      color: var(--dos-dark-gray);
-      border-color: var(--dos-dark-gray);
-      cursor: not-allowed;
-      font-size: 14px;
-    }
-
-    /* Bottom Row (3 Boxes: Estimate, Disk Status, Logs) */
-    .bottom-row {
-      height: 145px;
-      display: grid;
-      grid-template-columns: 240px 1fr 300px;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .status-meter {
-      font-family: monospace;
-      font-size: 15px;
-      color: var(--dos-green);
-      letter-spacing: 1px;
-      margin: 4px 0;
-    }
-
-    .log-box {
-      background: var(--dos-black);
-      color: var(--dos-green);
-      padding: 4px;
-      font-size: 11px;
-      height: 105px;
-      overflow-y: auto;
-      border: 1px solid var(--dos-dark-gray);
-      white-space: pre-wrap;
-    }
-
-    /* Bottom Status Ribbon */
-    .bottom-ribbon {
-      background-color: var(--dos-gray);
-      color: var(--dos-black);
-      padding: 2px 10px;
-      font-size: 12px;
-      font-weight: bold;
-      display: flex;
-      justify-content: space-between;
-      border-top: 2px solid var(--dos-fg);
-      height: 22px;
-      align-items: center;
-    }
-
-    /* Active Clue Dialog (Authentic Norton Overlay Box) */
-    .clue-overlay {
-      display: none;
-      position: absolute;
-      top: 35px;
-      left: 10px;
-      right: 10px;
-      bottom: 10px;
-      background: #000066;
-      border: 3px double var(--dos-yellow);
-      box-shadow: 8px 8px 0px var(--dos-black);
-      z-index: 100;
-      flex-direction: column;
-      padding: 16px;
-      justify-content: space-between;
-    }
-
-    .clue-overlay.active {
-      display: flex;
-    }
-
-    .clue-overlay-header {
-      border-bottom: 1px dashed var(--dos-yellow);
-      padding-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 16px;
-      color: var(--dos-yellow);
-      font-weight: bold;
-    }
-
-    .clue-question-text {
-      font-size: 24px;
-      color: #ffffff;
-      text-align: center;
-      margin: 15px 0;
-      line-height: 1.4;
-      background: #000044;
-      border: 1px solid var(--dos-cyan);
-      padding: 18px;
-    }
-
-    .clue-timer-badge {
-      font-family: 'VT323', monospace;
-      font-size: 38px;
-      color: var(--dos-yellow);
-      text-align: center;
-    }
-
-    /* Standard Button */
+    /* Retro DOS Buttons */
     .dos-btn {
-      background: var(--dos-gray);
-      color: var(--dos-black);
-      border: 2px solid var(--dos-fg);
-      border-right-color: var(--dos-dark-gray);
-      border-bottom-color: var(--dos-dark-gray);
-      padding: 4px 10px;
-      font-size: 12px;
+      background-color: #000078;
+      border: 2px solid var(--dos-cyan);
+      color: var(--dos-white);
       font-weight: bold;
+      transition: all 0.06s;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 2px 2px 0px var(--dos-black);
-    }
-
-    .dos-btn:active {
-      border: 2px solid var(--dos-dark-gray);
-      border-right-color: var(--dos-fg);
-      border-bottom-color: var(--dos-fg);
-      transform: translate(1px, 1px);
-    }
-
-    .dos-btn-green { background: var(--dos-green); color: var(--dos-black); }
-    .dos-btn-red { background: var(--dos-red); color: var(--dos-fg); }
-    .dos-btn-yellow { background: var(--dos-yellow); color: var(--dos-black); }
-
-    .dos-input {
-      background: var(--dos-black);
-      color: var(--dos-yellow);
-      border: 2px solid var(--dos-gray);
-      padding: 6px 10px;
-      font-size: 15px;
+      text-transform: uppercase;
       outline: none;
-      width: 100%;
+    }
+    .dos-btn:hover {
+      background-color: var(--dos-cyan);
+      color: #000055;
+    }
+    .dos-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: none;
+    }
+    .dos-btn-yellow {
+      border-color: var(--dos-yellow);
+      color: var(--dos-yellow);
+    }
+    .dos-btn-yellow:hover {
+      background-color: var(--dos-yellow);
+      color: #000055;
+    }
+    .dos-btn-red {
+      border-color: var(--dos-red);
+      color: var(--dos-red);
+    }
+    .dos-btn-red:hover {
+      background-color: var(--dos-red);
+      color: #FFFFFF;
+    }
+    .dos-btn-green {
+      border-color: var(--dos-green);
+      color: var(--dos-green);
+    }
+    .dos-btn-green:hover {
+      background-color: var(--dos-green);
+      color: #000055;
+    }
+    .dos-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      border-color: var(--dos-dark-grey);
+      color: var(--dos-grey);
+      background-color: #000038;
+      transform: none !important;
     }
 
-    /* Tactical Alert Modal */
-    .alert-banner {
-      display: none;
-      position: fixed;
-      top: 40px;
-      left: 15%;
-      width: 70%;
-      background: var(--dos-red);
-      color: var(--dos-fg);
-      border: 3px solid var(--dos-yellow);
-      padding: 12px;
-      text-align: center;
-      z-index: 10000;
-      box-shadow: 6px 6px 0px var(--dos-black);
-      animation: dosBlink 0.8s infinite steps(1);
+    /* Blinking terminal cursor */
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+    .dos-cursor {
+      display: inline-block;
+      width: 9px;
+      height: 18px;
+      background-color: var(--dos-yellow);
+      vertical-align: middle;
+      animation: blink 0.75s infinite;
     }
 
-    @keyframes dosBlink { 50% { opacity: 0.8; } }
+    /* Arcade Pulse */
+    @keyframes arcadePulse {
+      0% { transform: scale(0.7); opacity: 0; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1.0); opacity: 1; }
+    }
+    .pulse-arcade {
+      animation: arcadePulse 0.4s ease-out;
+    }
 
-    .color-blue { color: var(--dos-cyan); }
-    .color-red { color: var(--dos-red); }
-    .color-yellow { color: var(--dos-yellow); }
-    .color-green { color: var(--dos-green); }
+    /* Scrollbars DOS style */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+      background: #000050;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--dos-cyan);
+    }
   </style>
 </head>
-<body>
+<body class="crt min-h-screen flex flex-col justify-between selection:bg-yellow-300 selection:text-black">
 
-  <!-- TOP MENU RIBBON -->
-  <div class="top-ribbon">
-    <div class="nav-group">
-      <span class="menu-item" onclick="app.showHelp()">Main Menu</span>
-      <span class="menu-item" onclick="app.requestHostAccess()">System / Host</span>
-      <span>PAL-B</span>
-      <span style="color: var(--dos-black); background: var(--dos-yellow); padding: 0 4px;" id="ribbon-turn">TURN: TEAM BLUE</span>
+  <!-- ========================================== -->
+  <!-- 1. TOP SYSTEM MENU RIBBON (NORTON STYLE)   -->
+  <!-- ========================================== -->
+  <header class="bg-[#B0B0B0] text-black px-3 py-1 flex flex-wrap justify-between items-center text-xs sm:text-sm font-bold border-b-2 border-black tracking-wider select-none z-30">
+    <div class="flex items-center space-x-3 sm:space-x-4">
+      <span class="hover:bg-black hover:text-[#B0B0B0] px-1 cursor-pointer" onclick="openDeckModal()"><span class="text-red-700">M</span>ain Menu</span>
+      <span class="hover:bg-black hover:text-[#B0B0B0] px-1 cursor-pointer" onclick="triggerHostPause()"><span class="text-red-700">S</span>ystem [PAUSE: F2]</span>
+      <span class="text-blue-900 bg-blue-200 px-1.5 py-0.5 border border-blue-900 font-mono">ROOM: #DEFRAG-40</span>
+      <span class="hidden md:inline text-black">SECTORS: <span id="headerTilesLeft" class="text-blue-900">30/30</span></span>
     </div>
 
-    <!-- Callsign & Role Switcher Right in Ribbon -->
-    <div class="nav-group">
-      <span>CALLSIGN:</span>
-      <input type="text" id="ribbon-callsign" class="ribbon-input" value="Operator1" maxlength="14" onchange="app.updateCallsign(this.value)">
-      <span>ROLE:</span>
-      <select id="ribbon-role" class="ribbon-select" onchange="app.changeRole(this.value)">
-        <option value="spectator">Spectator / Board</option>
-        <option value="blue">Team Blue</option>
-        <option value="red">Team Red</option>
-        <option value="host">Host Operator</option>
-      </select>
-      <button class="dos-btn dos-btn-red" style="padding: 1px 6px; font-size: 10px;" onclick="app.resetSession()">🔄 RESET LOGIN</button>
-      <span id="ribbon-work-hours">WORK: 1/8 hours</span>
+    <!-- Active View Switcher / Session Badge -->
+    <div class="flex items-center space-x-2 sm:space-x-3 text-xs">
+      <span id="playerRolePill" class="hidden sm:inline bg-black text-cyan-300 px-2 py-0.5 border border-cyan-400 font-mono">ROLE: UNASSIGNED</span>
+      <button onclick="openLobbyModal()" class="bg-[#000080] text-white px-2 py-0.5 border border-black hover:bg-black hover:text-cyan-300 font-mono">[ 🔄 SWITCH ROLE ]</button>
+      <button onclick="resetClientSession()" class="bg-[#780000] text-white px-2 py-0.5 border border-black hover:bg-red-600 font-mono" title="Clear saved logins and test cache">[ 🔄 RESET CACHE ]</button>
+      <span id="dosClock" class="text-black font-mono font-bold">12:00:00</span>
     </div>
-  </div>
+  </header>
 
-  <!-- TACTICAL ALERT BANNER -->
-  <div id="alert-banner" class="alert-banner">
-    <div style="font-size: 18px; font-weight: bold;">[!] TACTICAL ALERT: ANSWER OR SKIP ACTIVATED! [!]</div>
-    <div id="alert-banner-text" style="font-size: 14px; margin-top: 4px;">TEAM RED FORCED THE CLOCK!</div>
-  </div>
+  <!-- ========================================== -->
+  <!-- 2. MAIN APPLICATION CONTAINER              -->
+  <!-- ========================================== -->
+  <main class="flex-1 p-2 sm:p-3 max-w-7xl w-full mx-auto flex flex-col justify-between">
 
-  <!-- WORKSPACE -->
-  <div class="workspace">
-    <div class="main-grid-row">
+    <!-- SUB-BAR / STATUS TELEMETRY -->
+    <div class="flex flex-wrap justify-between items-center border border-cyan-400 bg-[#000078] px-2.5 py-1 mb-2 text-xs sm:text-sm">
+      <div class="flex items-center space-x-2">
+        <span class="text-yellow-300 font-bold">TURN AUTHORITY:</span>
+        <span id="turnIndicatorBadge" class="px-2 py-0.5 font-bold uppercase border border-cyan-400 bg-cyan-950 text-cyan-300">TEAM BLUE (SELECTING)</span>
+        <span id="turnTimerBadge" class="text-yellow-300 font-mono font-bold ml-1 sm:ml-2">[ 20s PAUSED ]</span>
+      </div>
+      <div id="gameStatusAlert" class="text-cyan-200 truncate max-w-sm sm:max-w-md hidden sm:block">SYSTEM INTEGRITY 100% // FAT CLUSTERS VERIFIED</div>
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <button onclick="toggleAudioMute()" id="muteBtn" class="text-xs text-yellow-300 hover:underline">[ 🔊 AUDIO: ON ]</button>
+        <button onclick="openDeckModal()" class="text-xs text-cyan-300 hover:underline">[ 📁 DECK MANAGER ]</button>
+      </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- VIEW A: MAIN INTERACTIVE BOARD VIEW (UNIFIED FOR ALL)    -->
+    <!-- ======================================================== -->
+    <div id="viewBoard" class="flex flex-col gap-2 flex-1">
       
-      <!-- LEFT COLUMN: LEGEND & PROGRESS (TEAM BLUE) -->
-      <div class="side-col">
-        <div class="dos-box" style="flex: 1.2;">
-          <div class="dos-box-title">─ LEGEND ─</div>
-          <div class="legend-content">
-            <div class="legend-row"><span class="block-sample" style="background:#000088; border:1px solid #fff;">■</span> Used Clue</div>
-            <div class="legend-row"><span class="block-sample" style="color:var(--dos-gray)">▫</span> Unused Cluster</div>
-            <div class="legend-row"><span class="block-sample" style="color:var(--dos-cyan)">r</span> Reading Sector</div>
-            <div class="legend-row"><span class="block-sample" style="color:var(--dos-green)">W</span> Writing / Active</div>
-            <div class="legend-row"><span class="block-sample" style="color:var(--dos-red)">B</span> Bad / Voided</div>
-            <div class="legend-row"><span class="block-sample" style="color:#fff">X</span> Unmovable Tile</div>
-            <div style="border-top: 1px dashed var(--dos-fg); margin: 6px 0;"></div>
-            <div style="font-size: 11px;">Drive D:<br>1 block = 1024 clusters</div>
-            <div style="font-size: 11px; margin-top: 4px; color: var(--dos-cyan);" id="legend-roster-blue">BLUE ROSTER: (None)</div>
+      <!-- TOP SCORE & MATCH TELEMETRY (NORTON PROGRESS/DISK INFO STYLE) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+        
+        <!-- TEAM BLUE TERMINAL -->
+        <div id="hudBlueBox" class="dos-box p-2 transition-colors border-cyan-400">
+          <div class="flex justify-between items-center border-b border-cyan-400 pb-1 mb-1">
+            <span class="text-cyan-300 font-bold tracking-widest text-xs sm:text-sm">┌─ TEAM BLUE [SECTOR 01] ─┐</span>
+            <span id="badgeBlueActive" class="text-[10px] bg-cyan-400 text-black font-bold px-1.5 hidden">ACTIVE</span>
           </div>
-        </div>
-
-        <div class="dos-box" style="flex: 0.9;">
-          <div class="dos-box-title">─ PROGRESS ─</div>
-          <div style="font-size: 13px; line-height: 1.6;">
-            DP: <strong id="val-blue-dp" class="color-yellow">0</strong><br>
-            RC: <span id="val-blue-rc">0 / 150</span><br>
-            BC: 0<br>
-            Disks: <span id="val-cleared-count">0</span> / 30<br>
-            SQUADRON: <strong class="color-blue">BLUE</strong>
-          </div>
-        </div>
-      </div>
-
-      <!-- CENTER: CLUSTER FIELD (THE JEOPARDY BOARD) -->
-      <div class="dos-box cluster-field-container">
-        <div class="scanline-header">
-          <span>X B █ █ █ █ █ X X █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █ █</span>
-          <span>SPEED DISK v3.5</span>
-        </div>
-
-        <div class="jeopardy-grid" id="jeopardy-grid"></div>
-
-        <!-- NORTON CLUE MODAL OVERLAY -->
-        <div class="clue-overlay" id="clue-overlay">
-          <div class="clue-overlay-header">
-            <span id="clue-cat-title">CATEGORY // $VALUE</span>
-            <span id="clue-turn-indicator" class="color-cyan">ACTIVE: TEAM BLUE</span>
-          </div>
-
-          <div class="clue-timer-badge" id="clue-timer-readout">60s</div>
-          <div style="text-align: center; font-size: 12px; color: var(--dos-cyan);" id="clue-timer-state">
-            [TIMER PAUSED — WAITING FOR HOST TO START]
-          </div>
-
-          <div class="clue-question-text" id="clue-question-content">
-            QUESTION TEXT GOES HERE
-          </div>
-
-          <!-- Live Typing Readout -->
-          <div id="modal-typing-stream" style="font-size: 14px; color: var(--dos-green); min-height: 20px;">
-            <span id="stream-user">User</span>: &gt; <span id="stream-text"></span><span style="animation: dosBlink 0.8s infinite steps(1);">█</span>
-          </div>
-
-          <!-- Player Input Line -->
-          <div id="player-input-row" style="display: none; margin-top: 6px;">
-            <div style="font-size: 11px; color: var(--dos-yellow); margin-bottom: 2px;">YOUR SQUADRON INPUT (PRESS ENTER TO SUBMIT):</div>
-            <div style="display: flex; gap: 6px;">
-              <input type="text" id="modal-answer-input" class="dos-input" placeholder="Type answer here..." autocomplete="off">
-              <button class="dos-btn dos-btn-green" onclick="app.submitAnswer()">SUBMIT</button>
+          <div class="flex justify-between items-end">
+            <div>
+              <div class="text-[10px] text-gray-300">STORED ASSETS:</div>
+              <div id="boardBlueScore" class="text-2xl sm:text-3xl font-bold text-yellow-300 font-mono">$ 0</div>
+            </div>
+            <div class="text-right text-xs text-cyan-200">
+              <div>STATUS: <span id="boardBlueStatus" class="text-white font-bold">STANDBY</span></div>
+              <div class="text-[10px] text-gray-400">STRICT ALTERNATION</div>
             </div>
           </div>
+        </div>
 
-          <!-- Action Buttons Bar -->
-          <div style="display: flex; gap: 8px; margin-top: 10px;" id="modal-action-bar">
-            <!-- Defending Team Tactical Challenge -->
-            <button id="btn-modal-challenge" class="dos-btn dos-btn-red" style="flex: 1; display: none;" onclick="app.triggerAnswerOrSkip()">
-              ⚠️ TRIGGER "ANSWER OR SKIP" CHALLENGE
-            </button>
+        <!-- CENTER STAKES & CLOCK TELEMETRY -->
+        <div class="dos-box p-2 flex flex-col justify-center items-center text-center bg-[#000068] border-yellow-300">
+          <div class="text-xs text-yellow-300 font-bold">── TIMELINE MONITOR ──</div>
+          <div id="boardPhaseClock" class="text-3xl sm:text-4xl font-mono font-bold text-white my-0.5">00:20</div>
+          <div id="boardPhaseDesc" class="text-xs text-cyan-300 tracking-wider">TEAM BLUE CHOOSING A CLUSTER...</div>
+        </div>
 
-            <!-- Active Team Skip Thinking -->
-            <button id="btn-modal-skip" class="dos-btn dos-btn-yellow" style="flex: 1; display: none;" onclick="app.skipThinking()">
-              ⏭ SKIP THINKING &gt;&gt; START 15s TYPING
-            </button>
-
-            <!-- Host Manual Timer & Judging -->
-            <div id="modal-host-bar" style="display: none; width: 100%; gap: 6px;">
-              <button class="dos-btn dos-btn-green" style="flex: 1;" onclick="app.hostStartTimer(60)">▶ START 60s</button>
-              <button class="dos-btn dos-btn-yellow" style="flex: 1;" onclick="app.togglePause()" id="btn-modal-pause">⏸ PAUSE</button>
-              <button class="dos-btn" onclick="app.hostAddSeconds(10)">+10s</button>
-              <button class="dos-btn dos-btn-green" style="flex: 1.2;" onclick="app.hostJudge(true)">✅ CORRECT</button>
-              <button class="dos-btn dos-btn-red" style="flex: 1.2;" onclick="app.hostJudge(false)">❌ MISS</button>
-              <button class="dos-btn" onclick="app.hostVoidSubmission()">↩ VOID</button>
-              <button class="dos-btn" onclick="app.closeClueModal()">✕ CLOSE</button>
+        <!-- TEAM RED TERMINAL -->
+        <div id="hudRedBox" class="dos-box p-2 transition-colors border-red-400">
+          <div class="flex justify-between items-center border-b border-red-400 pb-1 mb-1">
+            <span class="text-red-400 font-bold tracking-widest text-xs sm:text-sm">┌─ TEAM RED [SECTOR 02] ─┐</span>
+            <span id="badgeRedActive" class="text-[10px] bg-red-400 text-black font-bold px-1.5 hidden">ACTIVE</span>
+          </div>
+          <div class="flex justify-between items-end">
+            <div>
+              <div class="text-[10px] text-gray-300">STORED ASSETS:</div>
+              <div id="boardRedScore" class="text-2xl sm:text-3xl font-bold text-yellow-300 font-mono">$ 0</div>
+            </div>
+            <div class="text-right text-xs text-red-200">
+              <div>STATUS: <span id="boardRedStatus" class="text-white font-bold">STANDBY</span></div>
+              <div class="text-[10px] text-gray-400">DEFENDING TACTICAL</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- RIGHT COLUMN: DISK INFO (TEAM RED) -->
-      <div class="side-col">
-        <div class="dos-box" style="flex: 1;">
-          <div class="dos-box-title">─ DISK INFO ─</div>
-          <div style="font-size: 12px; line-height: 1.5;">
-            <div style="font-weight: bold; color: var(--dos-yellow);">Damaged Boot Mirror</div>
-            <div style="color: var(--dos-gray);">Tier 3 • 31 GB</div>
-            <div style="border-top: 1px dashed var(--dos-fg); margin: 4px 0;"></div>
-            Score: <strong id="val-red-dp" class="color-yellow">$0</strong><br>
-            Fragmentation: <span id="val-frag-rate">70%</span><br>
-            Health: <span class="color-green">Fair (61)</span><br>
-            Tactical: <span class="color-yellow">READY</span><br>
-            Heat Sensitivity: <span class="color-red">MEDIUM</span><br>
-            Tags: <span style="font-size: 10px;">Critical, Heavy</span><br>
-            <div style="border-top: 1px dashed var(--dos-fg); margin: 4px 0;"></div>
-            <div style="font-size: 11px; color: var(--dos-red);" id="legend-roster-red">RED ROSTER: (None)</div>
+      <!-- MAIN JEOPARDY DEFRAG CLUSTER MATRIX (6 x 5) -->
+      <div class="dos-box p-2 flex-1 flex flex-col">
+        <div class="flex justify-between items-center mb-1 text-xs border-b border-cyan-400 pb-1">
+          <span class="text-yellow-300 font-bold">╔══ DATA DRIVE D: CLUSTER MATRIX [6x5 DISK SECTORS] ══╗</span>
+          <span id="boardActionAttribution" class="text-cyan-300 text-xs truncate">READY FOR CATEGORY SELECTION</span>
+        </div>
+
+        <!-- 6 Column Headers -->
+        <div id="boardCategoryHeaders" class="grid grid-cols-6 gap-1 sm:gap-2 mb-1 text-center font-bold text-xs sm:text-sm">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- 5 Rows of Tiles ($200 to $1000) -->
+        <div id="boardTilesGrid" class="grid grid-cols-6 gap-1 sm:gap-2 flex-1 font-mono text-center">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- PERSISTENT DIRECT INPUT BAR (ACCESSIBLE UNDER THE GRID)   -->
+      <!-- ======================================================== -->
+      <div id="persistentInputContainer" class="dos-box p-2 bg-[#000078] transition-colors border-cyan-400">
+        <div class="flex justify-between items-center text-xs text-yellow-300 font-bold border-b border-cyan-400 pb-1 mb-1.5">
+          <span id="persistentBarTitle">─ SQUADRON TRANSMISSION TERMINAL ─</span>
+          <span id="persistentLiveTyperBadge" class="text-red-400 font-mono text-[11px] animate-pulse hidden">● LIVE TEAM DRAFT</span>
+        </div>
+
+        <!-- Live Teammate Keystroke Display -->
+        <div id="persistentDraftRow" class="text-xs text-cyan-300 mb-1 flex items-center space-x-1 font-mono">
+          <span>&gt;</span>
+          <span id="persistentLiveAuthor" class="text-yellow-300 font-bold">Waiting:</span>
+          <span id="persistentLiveText" class="text-white truncate">...</span>
+          <span class="dos-cursor"></span>
+        </div>
+
+        <!-- Input Field & Actions Row -->
+        <div class="flex flex-wrap sm:flex-nowrap gap-2 items-center">
+          <input type="text" id="persistentAnswerInput" placeholder="[ INPUT DISABLED — AWAITING YOUR SQUADRON'S TURN ]" disabled
+                 class="bg-black text-white border-2 border-cyan-400 p-2 text-xs sm:text-sm font-mono flex-1 focus:outline-none focus:border-yellow-300 disabled:opacity-50 disabled:bg-[#000030]">
+          
+          <button onclick="submitPersistentAnswer()" id="btnPersistentSubmit" disabled class="dos-btn dos-btn-green py-2 px-4 text-xs font-bold whitespace-nowrap">
+            [ ↵ SUBMIT ANSWER ]
+          </button>
+
+          <!-- Quick Action Buttons -->
+          <button onclick="playerTriggerSkipThinking()" id="btnPersistentSkip" class="dos-btn dos-btn-yellow py-2 px-3 text-xs font-bold whitespace-nowrap hidden">
+            [ ⏩ READY TO ANSWER ]
+          </button>
+          
+          <button onclick="playerTriggerTacticalChallenge()" id="btnPersistentChallenge" class="dos-btn dos-btn-red py-2 px-3 text-xs font-bold whitespace-nowrap animate-pulse hidden">
+            [ ⚠️ ANSWER OR SKIP! ]
+          </button>
+        </div>
+      </div>
+
+      <!-- BOTTOM DEFRAG TELEMETRY & SYSTEM LOGS -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+        
+        <!-- ESTIMATE / TACTICAL RISK STAKES -->
+        <div class="dos-box p-2 bg-[#000078]">
+          <div class="text-yellow-300 font-bold border-b border-cyan-400 pb-0.5 mb-1">─ SECTOR ESTIMATE ─</div>
+          <div class="flex justify-between"><span>CURRENT STAKE:</span> <span id="telemetryValue" class="text-yellow-300 font-bold font-mono">$ 0</span></div>
+          <div class="flex justify-between"><span>TACTICAL RISK:</span> <span id="telemetryRisk" class="text-green-400">NORMAL ($0 MISS)</span></div>
+          <div class="flex justify-between"><span>LAST SELECTION:</span> <span id="telemetryLastPick" class="text-cyan-200 truncate">None</span></div>
+        </div>
+
+        <!-- RETRO SEGMENTED MEDIA / HOST QUICK TIMER METER -->
+        <div class="dos-box p-2 bg-[#000078] flex flex-col justify-between">
+          <div class="flex justify-between text-yellow-300 font-bold border-b border-cyan-400 pb-0.5">
+            <span id="centerMeterTitle">─ MEDIA BUFFER METER ─</span>
+            <span id="mediaPercentLabel" class="font-mono">0%</span>
+          </div>
+          <div id="segmentedAsciiBar" class="text-sm font-mono tracking-widest text-cyan-300 my-1 truncate">
+            [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+          </div>
+          
+          <!-- Host Manual Controls (Rendered when viewing as Host) -->
+          <div id="hostQuickBarControls" class="hidden flex flex-wrap gap-1 mt-1">
+            <button onclick="hostStartSelectionTimer()" class="dos-btn dos-btn-green px-1.5 py-0.5 text-[10px]">[ ▶ START PICK (20s) ]</button>
+            <button onclick="hostStartThinkingTimer()" class="dos-btn dos-btn-green px-1.5 py-0.5 text-[10px]">[ ▶ START THINK (60s) ]</button>
+            <button onclick="triggerHostPause()" class="dos-btn dos-btn-yellow px-1.5 py-0.5 text-[10px]">[ ⏸ PAUSE ]</button>
+            <button onclick="hostAddSeconds(10)" class="dos-btn px-1.5 py-0.5 text-[10px]">[ +10s ]</button>
+            <button onclick="hostForfeitSelection()" class="dos-btn dos-btn-red px-1.5 py-0.5 text-[10px]">[ PASS TURN ]</button>
+          </div>
+
+          <div class="flex justify-between text-[11px] text-gray-300" id="mediaStatusSubRow">
+            <span id="mediaStatusSub">IDLE - READY</span>
+            <span id="mediaTimeSub">00:00 / 00:00</span>
+          </div>
+        </div>
+
+        <!-- REALTIME EVENT LOGS (NORTON DEFRAG STYLE) -->
+        <div class="dos-box p-2 bg-[#000078] flex flex-col">
+          <div class="text-yellow-300 font-bold border-b border-cyan-400 pb-0.5 mb-1">─ REALTIME SYSTEM LOGS ─</div>
+          <div id="dosEventLogs" class="font-mono text-[11px] flex-1 overflow-hidden space-y-0.5 text-cyan-200">
+            <div>[00:00] DEFRAG ENGINE ONLINE. Ready.</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- BOTTOM ROW (ESTIMATE, DISK STATUS, LOGS) -->
-    <div class="bottom-row">
-      <!-- ESTIMATE (BOTTOM LEFT) -->
-      <div class="dos-box">
-        <div class="dos-box-title">─ ESTIMATE ─</div>
-        <div style="font-size: 11px; line-height: 1.6;">
-          Mode: <strong class="color-green">Safe</strong><br>
-          E.TIME: <strong id="est-timer" class="color-yellow">01:00</strong><br>
-          REWARD: <strong id="est-reward" class="color-yellow">-- DP</strong><br>
-          RISK: <span id="est-risk" class="color-green">NORMAL ($0)</span><br>
-          HEAT RISK: <span class="color-cyan">LOW</span><br>
-          TURN: <strong id="est-turn" class="color-yellow">TEAM BLUE</strong>
+    <!-- ======================================================== -->
+    <!-- VIEW B: HOST CONTROL COMMAND CONSOLE (PIN PROTECTED)      -->
+    <!-- ======================================================== -->
+    <div id="viewHost" class="hidden flex-col gap-3 flex-1">
+      
+      <!-- EMERGENCY HOST BAR -->
+      <div class="dos-box p-2.5 bg-[#000070] flex flex-wrap justify-between items-center gap-2 border-yellow-300">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-yellow-300 font-bold text-xs sm:text-sm">HOST CONTROLS:</span>
+          <button onclick="hostStartSelectionTimer()" class="dos-btn dos-btn-green text-xs px-2.5 py-1 font-bold">[ ▶ START PICK (20s) ]</button>
+          <button onclick="hostStartThinkingTimer()" class="dos-btn dos-btn-green text-xs px-2.5 py-1 font-bold">[ ▶ START THINK (60s) ]</button>
+          <button onclick="triggerHostPause()" id="hostPauseBtn" class="dos-btn dos-btn-yellow text-xs px-3 py-1 font-bold">[ ⏸ PAUSE CLOCK ]</button>
+          <button onclick="hostAddSeconds(10)" class="dos-btn text-xs px-2 py-1 font-bold">[ +10s TIME ]</button>
+          <button onclick="triggerHostVoidSubmission()" class="dos-btn dos-btn-red text-xs px-3 py-1 font-bold">[ ↩ VOID SUBMISSION ]</button>
+          <button onclick="triggerHostUndoClue()" class="dos-btn text-xs px-2.5 py-1">[ 🔄 RE-OPEN CLUE ]</button>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="triggerHostEndMatch()" class="dos-btn dos-btn-yellow text-xs px-3 py-1">[ 🏆 END MATCH ]</button>
+          <button onclick="triggerHostResetMatch()" class="dos-btn text-xs px-2 py-1 text-red-300">[ RESET MATCH ]</button>
         </div>
       </div>
 
-      <!-- DISK STATUS (BOTTOM CENTER) -->
-      <div class="dos-box" style="display: flex; flex-direction: column; justify-content: space-between;">
-        <div class="dos-box-title">─ DISK STATUS ─</div>
-        <div class="status-meter" id="disk-status-bar">[████████░░░░░░░░░░░░░░░░] 25%</div>
-        <div style="font-size: 12px; display: flex; justify-content: space-between;">
-          <span>Cluster: <strong id="disk-curr-cluster" class="color-cyan">DRIVE D:\SECTOR_0</strong></span>
-          <span id="disk-pct">25%</span>
+      <!-- ACTIVE CLUE & VERDICT VERIFICATION STATION -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        
+        <!-- CLUE & OFFICIAL ANSWER (ZERO-LEAK STATION) -->
+        <div class="dos-box p-3 border-cyan-400">
+          <div class="text-yellow-300 font-bold text-xs sm:text-sm border-b border-cyan-400 pb-1 mb-2 flex justify-between">
+            <span>─ ACTIVE CLUE TELEMETRY ─</span>
+            <span id="hostCluePill" class="text-white font-mono">NO ACTIVE CLUE</span>
+          </div>
+          
+          <div class="text-xs text-gray-300 mb-1">BROADCAST PROMPT (SEEN BY PLAYERS):</div>
+          <div id="hostCluePrompt" class="p-2.5 bg-[#000050] border border-cyan-300 text-xs sm:text-sm font-mono text-cyan-100 min-h-[75px] mb-2 leading-relaxed">
+            Waiting for tile selection...
+          </div>
+
+          <div class="text-xs text-yellow-300 font-bold mb-1 flex items-center justify-between">
+            <span>OFFICIAL CONFIDENTIAL ANSWER (ZERO-LEAK PROTECTED):</span>
+            <span class="text-[10px] text-red-400">HOST ONLY</span>
+          </div>
+          <div id="hostSecretAnswer" class="p-2.5 bg-[#000038] border-2 border-yellow-400 text-sm font-bold text-yellow-300 font-mono">
+            [ WAITING ]
+          </div>
         </div>
-        <div style="font-size: 11px; color: var(--dos-gray);">
-          Elapsed Time: <span id="disk-elapsed">00:00</span> // Host Manual Engine
+
+        <!-- SUBMITTED ANSWER & JUDGING BUTTONS -->
+        <div class="dos-box p-3 flex flex-col justify-between border-cyan-400">
+          <div>
+            <div class="text-yellow-300 font-bold text-xs sm:text-sm border-b border-cyan-400 pb-1 mb-2 flex justify-between">
+              <span>─ SUBMISSION VERIFICATION ─</span>
+              <span id="hostSubmittingPlayerPill" class="text-cyan-300 font-mono">WAITING</span>
+            </div>
+            
+            <div class="text-xs text-gray-300 mb-1">TEAM'S LOCKED IN ANSWER:</div>
+            <div id="hostAnswerDisplayBox" class="p-2.5 bg-black border-2 border-white text-base sm:text-lg font-bold text-white font-mono min-h-[65px] flex items-center justify-between">
+              <span id="hostAnswerString">[ NO SUBMISSION YET ]</span>
+              <span id="hostAnswerStatusTag" class="text-xs px-2 py-0.5 bg-gray-800 text-gray-400 font-bold">IDLE</span>
+            </div>
+          </div>
+
+          <!-- VERDICT ACTIONS -->
+          <div class="mt-4 pt-2 border-t border-cyan-400 flex flex-col gap-2">
+            <div class="text-xs text-center text-cyan-200">OFFICIAL VERDICT (MANUAL HOST JUDGMENT):</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="hostAwardVerdict(true)" id="btnHostCorrect" disabled class="dos-btn dos-btn-green py-2.5 text-sm font-bold">
+                [ ✅ CORRECT (+$$) ]
+              </button>
+              <button onclick="hostAwardVerdict(false)" id="btnHostIncorrect" disabled class="dos-btn dos-btn-red py-2.5 text-sm font-bold">
+                [ ❌ INCORRECT ]
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- LOGS (BOTTOM RIGHT) -->
-      <div class="dos-box" style="display: flex; flex-direction: column;">
-        <div class="dos-box-title">─ LOGS ─</div>
-        <div class="log-box" id="system-log"></div>
+      <!-- PERSISTENT LIVE SCORE OVERRIDE PANEL -->
+      <div class="dos-box p-3 bg-[#000078] border-yellow-300">
+        <div class="text-yellow-300 font-bold text-xs sm:text-sm border-b border-cyan-400 pb-1 mb-2">
+          ─ LIVE SCORE OVERRIDE CONSOLE (ANTI-MISCLICK & ADJUSTMENTS) ─
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <!-- BLUE OVERRIDES -->
+          <div class="border border-cyan-400 p-2.5 bg-[#000060]">
+            <div class="text-cyan-300 font-bold mb-1">TEAM BLUE BALANCE</div>
+            <div class="flex items-center space-x-2 mb-2">
+              <span>SCORE:</span>
+              <input type="number" id="hostOverrideBlueInput" class="bg-black text-yellow-300 border border-cyan-300 p-1 font-mono text-center w-28 text-sm" value="0">
+              <button onclick="hostApplyManualScore('blue')" class="dos-btn text-xs px-2.5 py-1">[ SET ]</button>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <button onclick="hostAdjustQuickScore('blue', 200)" class="dos-btn px-2 py-0.5">+200</button>
+              <button onclick="hostAdjustQuickScore('blue', -200)" class="dos-btn px-2 py-0.5">-200</button>
+              <button onclick="hostAdjustQuickScore('blue', 400)" class="dos-btn px-2 py-0.5">+400</button>
+              <button onclick="hostAdjustQuickScore('blue', -400)" class="dos-btn px-2 py-0.5">-400</button>
+              <button onclick="hostAdjustQuickScore('blue', 600)" class="dos-btn px-2 py-0.5">+600</button>
+              <button onclick="hostAdjustQuickScore('blue', -600)" class="dos-btn px-2 py-0.5">-600</button>
+            </div>
+          </div>
+
+          <!-- RED OVERRIDES -->
+          <div class="border border-red-400 p-2.5 bg-[#000060]">
+            <div class="text-red-400 font-bold mb-1">TEAM RED BALANCE</div>
+            <div class="flex items-center space-x-2 mb-2">
+              <span>SCORE:</span>
+              <input type="number" id="hostOverrideRedInput" class="bg-black text-yellow-300 border border-red-300 p-1 font-mono text-center w-28 text-sm" value="0">
+              <button onclick="hostApplyManualScore('red')" class="dos-btn text-xs px-2.5 py-1">[ SET ]</button>
+            </div>
+            <div class="flex flex-wrap gap-1">
+              <button onclick="hostAdjustQuickScore('red', 200)" class="dos-btn px-2 py-0.5">+200</button>
+              <button onclick="hostAdjustQuickScore('red', -200)" class="dos-btn px-2 py-0.5">-200</button>
+              <button onclick="hostAdjustQuickScore('red', 400)" class="dos-btn px-2 py-0.5">+400</button>
+              <button onclick="hostAdjustQuickScore('red', -400)" class="dos-btn px-2 py-0.5">-400</button>
+              <button onclick="hostAdjustQuickScore('red', 600)" class="dos-btn px-2 py-0.5">+600</button>
+              <button onclick="hostAdjustQuickScore('red', -600)" class="dos-btn px-2 py-0.5">-600</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- 3. RETRO MODALS & OVERLAYS                               -->
+  <!-- ======================================================== -->
+
+  <!-- MODAL 1: 5-SECOND TACTICAL CHALLENGE POPUP BANNER (GLOBAL ROUTING) -->
+  <div id="modalTacticalBanner" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 hidden">
+    <div class="dos-box-red max-w-xl w-full p-4 sm:p-6 bg-[#320008] text-center shadow-2xl animate-pulse">
+      <div class="text-red-400 font-mono text-sm sm:text-base font-bold mb-2">
+        ╔═══════════════════════════════════════════════════════════╗<br>
+        ║  [!] TACTICAL ALERT: ANSWER OR SKIP ACTIVATED!            ║<br>
+        ╚═══════════════════════════════════════════════════════════╝
+      </div>
+      <div id="tacticalBannerTeam" class="text-xl sm:text-2xl font-bold font-mono text-yellow-300 my-2">
+        TEAM RED HAS FORCED THE CLOCK!
+      </div>
+      <div class="text-sm sm:text-base font-mono text-white mb-2">
+        TRIGGERED BY PLAYER: &gt;&gt; <span id="tacticalBannerPlayer" class="text-cyan-300 font-bold">Adnane</span> &lt;&lt;
+      </div>
+      <div class="p-2 border border-red-500 bg-black text-xs text-red-200 font-mono">
+        [!] THINKING TIME ABORTED — 15 SECONDS TO ANSWER!
       </div>
     </div>
   </div>
 
-  <!-- BOTTOM RIBBON -->
-  <div class="bottom-ribbon">
-    <div>[F1: HELP]  [F2: HOST PIN: 1337]  [F4: SKIP THINKING]  [SPACE: CHALLENGE]</div>
-    <div style="cursor: pointer;" onclick="app.showHelp()">EXIT</div>
-  </div>
-
-  <!-- HOST PIN PROMPT MODAL -->
-  <div id="host-pin-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10001; align-items: center; justify-content: center;">
-    <div class="dos-box" style="padding: 20px; max-width: 380px; width: 90%; text-align: center;">
-      <div class="dos-box-title">─ HOST AUTHENTICATION ─</div>
-      <div style="font-size: 13px; margin-bottom: 12px;">ENTER SYSTEM SECURITY PIN (DEFAULT: 1337):</div>
-      <input type="password" id="input-host-pin" class="dos-input" maxlength="6" style="text-align: center; font-size: 20px; margin-bottom: 12px;">
-      <div style="display: flex; gap: 8px;">
-        <button class="dos-btn dos-btn-green" style="flex: 1;" onclick="app.verifyHostPIN()">AUTHENTICATE</button>
-        <button class="dos-btn dos-btn-red" style="flex: 1;" onclick="document.getElementById('host-pin-modal').style.display='none'">CANCEL</button>
+  <!-- MODAL 2: HOST ANTI-MISCLICK CONFIRMATION DIALOG (STATE ROUTED) -->
+  <div id="modalHostConfirm" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 hidden">
+    <div class="dos-box-yellow max-w-md w-full p-4 bg-[#0000A8]">
+      <div class="text-yellow-300 font-bold text-center border-b-2 border-yellow-400 pb-1 text-sm sm:text-base mb-3">
+        ╔══ CONFIRM CLUE EXECUTION [HOST CHECK] ══╗
       </div>
-      <div id="pin-error-text" style="color: var(--dos-red); font-size: 12px; margin-top: 8px;"></div>
+      <div class="text-xs text-gray-200 space-y-2 mb-4 font-mono">
+        <div>CATEGORY : <span id="confirmModalCategory" class="text-cyan-300 font-bold">GEOGRAPHY</span></div>
+        <div>POINT STAKE: <span id="confirmModalValue" class="text-yellow-300 font-bold">$ 400</span></div>
+        <div>CHOOSING SQUAD: <span id="confirmModalTeam" class="text-white font-bold">TEAM BLUE</span></div>
+        <div>SELECTED BY: <span id="confirmModalPlayer" class="text-yellow-200 font-bold">Adnane</span></div>
+        <div class="pt-2 border-t border-cyan-500 text-gray-300" id="confirmModalStatusText">
+          Broadcast this cluster to all player terminals?
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3" id="confirmModalHostButtons">
+        <button onclick="hostConfirmClueExecution(true)" class="dos-btn dos-btn-green py-2 text-xs sm:text-sm font-bold">
+          [ ENTER: REVEAL ]
+        </button>
+        <button onclick="hostConfirmClueExecution(false)" class="dos-btn dos-btn-red py-2 text-xs sm:text-sm font-bold">
+          [ ESC: ABORT ]
+        </button>
+      </div>
+      <div id="confirmModalNonHostNotice" class="text-center text-xs text-yellow-300 py-2 border border-yellow-400 bg-black hidden font-mono">
+        [ WAITING FOR HOST TO VERIFY AND REVEAL CLUSTER... ]
+      </div>
     </div>
   </div>
 
-  <!-- SCRIPT LOGIC -->
+  <!-- MODAL 3: CLUE STAGE OVERLAY (FOR BOARD / STREAM VIEW) -->
+  <div id="modalClueStage" class="fixed inset-0 bg-black/90 flex items-center justify-center p-2 sm:p-5 z-40 hidden">
+    <div class="dos-box max-w-4xl w-full p-4 sm:p-5 bg-[#0000A8] flex flex-col justify-between max-h-[95vh] overflow-y-auto">
+      
+      <!-- STAGE HEADER -->
+      <div class="flex justify-between items-center border-b-2 border-cyan-400 pb-2 mb-2 sm:mb-3">
+        <div>
+          <span id="stageCategoryName" class="text-cyan-300 font-bold text-sm sm:text-base">CATEGORY NAME</span>
+          <span class="text-gray-400 mx-2">//</span>
+          <span id="stageClueValue" class="text-yellow-300 font-mono font-bold text-base sm:text-xl">$ 400</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span id="stagePhaseBadge" class="text-xs bg-yellow-300 text-black font-bold px-2 py-0.5 uppercase">3-2-1 READY</span>
+          <span id="stageTimerClock" class="text-xl sm:text-2xl font-mono font-bold text-white">00:60</span>
+        </div>
+      </div>
+
+      <!-- 3-2-1-GO ARCADE COUNTDOWN LAYER -->
+      <div id="stageArcadeCountdown" class="my-6 text-center py-6">
+        <div id="arcadeBigNumber" class="text-6xl sm:text-8xl font-mono font-bold text-yellow-300 pulse-arcade tracking-widest">
+          3
+        </div>
+        <div class="text-xs sm:text-sm text-cyan-300 mt-3 tracking-widest">SYNCHRONIZING TERMINALS...</div>
+      </div>
+
+      <!-- CLUE CONTENT LAYER -->
+      <div id="stageContentLayer" class="hidden flex-col gap-3 my-1">
+        
+        <!-- MEDIA WRAPPER -->
+        <div id="stageMediaContainer" class="hidden flex-col items-center justify-center border-2 border-cyan-300 p-2 bg-[#000060]">
+          <img id="stageClueImage" src="" alt="Clue Photo" class="max-h-56 object-contain border border-white mb-2 hidden">
+          
+          <div id="stageClueAudioWrapper" class="w-full text-center hidden">
+            <div class="text-yellow-300 text-xs font-mono mb-1 font-bold">─── RETRO AUDIO FREQUENCY DECODE ───</div>
+            <div class="flex justify-center items-center space-x-1 text-cyan-300 font-mono text-sm py-1.5">
+              <span>░▒▓█</span><span class="text-yellow-300">████▓▒</span><span>░▒▓█</span><span class="text-green-400">███▒░</span><span>░▒▓█</span>
+            </div>
+            <button onclick="replayAudioTrack()" class="dos-btn text-xs px-3 py-1">[ 🔁 REPLAY AUDIO TRACK ]</button>
+          </div>
+
+          <!-- SEGMENTED DOS MEDIA LOADING BAR -->
+          <div class="w-full mt-2 font-mono text-xs">
+            <div class="flex justify-between text-yellow-300 mb-0.5">
+              <span>TRANSMISSION BUFFER:</span>
+              <span id="stageMediaPct">0%</span>
+            </div>
+            <div id="stageMediaAscii" class="text-cyan-300 tracking-wider overflow-hidden truncate">
+              [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
+            </div>
+            <div id="stageMediaLockBanner" class="text-red-400 text-center font-bold mt-1 text-[11px]">
+              🔒 ALL INPUTS HARD-LOCKED UNTIL PLAYBACK COMPLETES
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN QUESTION TEXT -->
+        <div class="p-3 sm:p-5 bg-[#000078] border-2 border-white text-center font-mono">
+          <div class="text-xs text-yellow-300 mb-1 font-bold">── CLUE TRANSCRIPT ──</div>
+          <div id="stageCluePrompt" class="text-base sm:text-xl font-bold text-white leading-relaxed">
+            Clue question will be rendered here.
+          </div>
+        </div>
+
+        <!-- LIVE BOARD TYPING READOUT -->
+        <div id="stageLiveTypingBox" class="border border-yellow-400 bg-black p-2.5 font-mono hidden">
+          <div class="flex justify-between text-xs text-yellow-300 border-b border-gray-700 pb-1 mb-1">
+            <span id="stageLiveTypingSquad">TEAM LIVE DRAFT:</span>
+            <span class="text-red-400 animate-pulse">● LIVE DRAFT</span>
+          </div>
+          <div class="text-cyan-300 text-xs sm:text-sm truncate">
+            <span id="stageLiveTyperName">Player</span> is typing: <span id="stageLiveDraftText" class="text-white font-bold">...</span><span class="dos-cursor"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE FOOTER & HOST CONTROLS -->
+      <div class="border-t border-cyan-400 pt-2 flex flex-wrap justify-between items-center text-xs text-gray-300 gap-2">
+        <div>ACTIVE SQUAD: <span id="stageActiveSquad" class="text-yellow-300 font-bold uppercase">TEAM BLUE</span></div>
+        <div id="stageTacticalWarning" class="text-red-400 font-bold"></div>
+        
+        <!-- Host Quick Controls inside Clue Window -->
+        <div id="stageHostActions" class="hidden flex gap-1">
+          <button onclick="hostStartThinkingTimer()" class="dos-btn dos-btn-green px-2 py-0.5 text-xs">[ ▶ START 60s ]</button>
+          <button onclick="hostProceedToTyping()" class="dos-btn dos-btn-yellow px-2 py-0.5 text-xs">[ ⚡ FORCE 15s TYPING ]</button>
+          <button onclick="triggerHostPause()" class="dos-btn px-2 py-0.5 text-xs">[ ⏸ PAUSE ]</button>
+          <button onclick="hostAddSeconds(10)" class="dos-btn px-2 py-0.5 text-xs">[ +10s ]</button>
+          <button onclick="hostAwardVerdict(true)" class="dos-btn dos-btn-green px-2 py-0.5 text-xs">[ ✅ CORRECT ]</button>
+          <button onclick="hostAwardVerdict(false)" class="dos-btn dos-btn-red px-2 py-0.5 text-xs">[ ❌ MISS ]</button>
+        </div>
+
+        <div class="text-cyan-300">MS-DOS JEOPARDY v4.0</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL 4: LOBBY & ROLE SELECTOR -->
+  <div id="modalLobby" class="fixed inset-0 bg-black/90 flex items-center justify-center p-3 sm:p-4 z-50 hidden">
+    <div class="dos-box-yellow max-w-md w-full p-4 sm:p-5 bg-[#0000A8]">
+      <div class="text-yellow-300 font-bold text-center border-b-2 border-yellow-400 pb-1 text-sm sm:text-base mb-3">
+        ╔══ SELECT MATCH TERMINAL & ROLE ══╗
+      </div>
+
+      <div class="space-y-3 font-mono text-xs">
+        <div>
+          <span class="text-gray-200">YOUR HANDLE / DISPLAY NAME:</span>
+          <input type="text" id="lobbyPlayerNameInput" value="Player_1" class="bg-black text-cyan-300 border-2 border-cyan-400 p-2 font-mono text-sm w-full mt-1 focus:outline-none">
+        </div>
+
+        <div class="text-gray-300 pt-1">CHOOSE TERMINAL ASSIGNMENT:</div>
+        
+        <div class="grid grid-cols-1 gap-2">
+          <button onclick="joinRole('blue')" class="dos-btn py-2 text-cyan-300 border-cyan-400 font-bold flex justify-between px-3">
+            <span>[ 🔵 JOIN TEAM BLUE ]</span>
+            <span class="text-gray-400 text-[10px]">CYAN SQUADRON</span>
+          </button>
+          
+          <button onclick="joinRole('red')" class="dos-btn py-2 text-red-400 border-red-400 font-bold flex justify-between px-3">
+            <span>[ 🔴 JOIN TEAM RED ]</span>
+            <span class="text-gray-400 text-[10px]">CRIMSON SQUADRON</span>
+          </button>
+
+          <button onclick="joinRole('board')" class="dos-btn dos-btn-yellow py-2 font-bold">
+            [ 🖥️ SPECTATOR / BOARD VIEW (DISCORD STREAM) ]
+          </button>
+
+          <div class="border-t border-cyan-500 pt-2 mt-1">
+            <div class="text-[11px] text-yellow-300 mb-1">HOST ACCESS (PIN PROTECTED):</div>
+            <div class="flex space-x-2">
+              <input type="password" id="lobbyHostPinInput" placeholder="PIN (1337)" class="bg-black text-yellow-300 border border-yellow-400 p-1.5 text-center text-xs w-24">
+              <button onclick="joinRole('host')" class="dos-btn flex-1 py-1 text-xs">
+                [ 👑 ENTER HOST CONSOLE ]
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-[10px] text-gray-400 border-t border-gray-700 pt-2">
+          Note: You can switch teams anytime using the top ribbon.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: "NAH UH" BRUTE FORCE LOCKOUT DIALOG -->
+  <div id="modalNahUhLockout" class="fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-50 hidden">
+    <div class="dos-box-red max-w-md w-full p-5 bg-[#000078] text-center font-mono">
+      <div class="text-red-400 font-bold border-b-2 border-red-500 pb-1 text-sm mb-3">
+        [!] SECURITY VIOLATION: AUTHENTICATION FAILED (3/3)
+      </div>
+      <div class="text-2xl text-yellow-300 font-bold my-3">
+        Nah uh... You are not the Host.
+      </div>
+      <div class="p-3 bg-black border border-red-400 text-xs text-red-300 mb-3 leading-relaxed">
+        TERMINAL LOCKED FOR 15 MINUTES.<br>
+        EXCESSIVE UNAUTHORIZED HOST PIN ATTEMPTS DETECTED.<br>
+        TRY AGAIN AT: <span id="nahUhUnlockTime" class="text-white font-bold font-mono">12:15:00</span>
+      </div>
+      <button onclick="closeNahUhModal()" class="dos-btn px-4 py-1.5 text-xs">
+        [ RETURN TO PLAYER TERMINAL ]
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL 6: CUSTOM DOS CONFIRM / MESSAGE MODAL -->
+  <div id="modalDosMessage" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 hidden">
+    <div class="dos-box-yellow max-w-sm w-full p-4 bg-[#0000A8] text-center font-mono text-xs">
+      <div id="dosMessageTitle" class="text-yellow-300 font-bold border-b border-yellow-400 pb-1 mb-2">
+        SYSTEM NOTICE
+      </div>
+      <div id="dosMessageBody" class="text-gray-200 my-3 leading-relaxed">
+        Notification text
+      </div>
+      <div id="dosMessageActions" class="flex justify-center space-x-3 pt-2">
+        <button onclick="closeDosMessageModal()" class="dos-btn px-4 py-1 text-xs font-bold">
+          [ OK ]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 7: IN-GAME DECK BUILDER / JSON MANAGER -->
+  <div id="modalDeckManager" class="fixed inset-0 bg-black/90 flex items-center justify-center p-2 sm:p-4 z-50 hidden">
+    <div class="dos-box-yellow max-w-4xl w-full p-4 bg-[#0000A8] max-h-[92vh] flex flex-col justify-between">
+      <div class="flex justify-between items-center border-b-2 border-yellow-400 pb-1 mb-2">
+        <span class="text-yellow-300 font-bold text-sm sm:text-base">╔══ CLUE DECK MANAGER [FAT TABLE] ══╗</span>
+        <button onclick="closeDeckModal()" class="text-red-400 font-bold hover:text-white text-xs">[ ESC: CLOSE ]</button>
+      </div>
+
+      <div class="flex flex-wrap gap-2 justify-between items-center text-xs mb-2 bg-[#000078] p-2 border border-cyan-400 font-mono">
+        <div>Configure categories, prompts, secret answers & media URLs.</div>
+        <div class="flex space-x-2">
+          <button onclick="exportDeckToJson()" class="dos-btn dos-btn-yellow px-2 py-0.5">[ 💾 EXPORT JSON ]</button>
+          <label class="dos-btn px-2 py-0.5 cursor-pointer">
+            [ 📂 IMPORT JSON ]
+            <input type="file" id="jsonDeckInput" accept=".json" onchange="importDeckFromJson(event)" class="hidden">
+          </label>
+          <button onclick="restoreDefaultDeck()" class="dos-btn px-2 py-0.5 text-cyan-300">[ 🔄 FACTORY DECK ]</button>
+        </div>
+      </div>
+
+      <!-- Category Tab Buttons -->
+      <div id="deckCategoryTabs" class="flex flex-wrap gap-1 text-xs mb-2"></div>
+
+      <!-- Active Category Editor -->
+      <div id="deckCluesEditor" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs font-mono"></div>
+
+      <div class="border-t border-cyan-400 pt-2 mt-2 flex justify-between items-center text-xs">
+        <span class="text-gray-400">Total Sectors: 30 / 30</span>
+        <button onclick="saveAndApplyDeckChanges()" class="dos-btn dos-btn-green px-4 py-1.5 font-bold">
+          [ 💾 SAVE & APPLY DECK TO GAME ]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 8: VICTORY CEREMONY / GAME OVER -->
+  <div id="modalVictory" class="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 hidden">
+    <div class="dos-box-yellow max-w-xl w-full p-5 bg-[#0000A8] text-center font-mono">
+      <div class="text-yellow-300 text-lg font-bold mb-2">
+        ╔═══════════════════════════════════════════════════════╗<br>
+        ║        GAME OVER // DEFRAG CEREMONY COMPLETE          ║<br>
+        ╚═══════════════════════════════════════════════════════╝
+      </div>
+      
+      <!-- ASCII TROPHY -->
+      <pre class="text-yellow-300 text-xs font-mono my-2 select-none leading-none">
+        ___________
+       '._==_==_=_.'
+       .-\:      /-.
+      | (|:.     |) |
+       '-|:.     |-'
+         \::.    /
+          '::. .'
+            ) (
+          _.' '._
+         `"""""""`
+      </pre>
+
+      <div id="victoryWinnerBanner" class="text-2xl sm:text-3xl font-bold text-white mb-2">
+        CHAMPION: TEAM BLUE
+      </div>
+      <div id="victoryFinalScores" class="text-base sm:text-lg text-cyan-300 mb-3">
+        FINAL ASSETS: BLUE: $2,400  │  RED: $1,200
+      </div>
+
+      <div class="border border-cyan-400 bg-[#000060] p-2.5 text-xs text-gray-200 mb-4">
+        <div>STATUS: ALL 30 CLUSTER SECTORS FULLY DEFRAGMENTED.</div>
+        <div>MATCH RUNTIME: <span id="victoryMatchTime">14:20</span></div>
+        <div>TACTICAL CHALLENGES EXECUTED: <span id="victoryChallengesCount">1</span></div>
+      </div>
+
+      <div class="flex justify-center space-x-3">
+        <button onclick="triggerHostResetMatch(); closeVictoryModal();" class="dos-btn dos-btn-yellow px-5 py-1.5 font-bold">
+          [ 🔄 PLAY AGAIN (RESET) ]
+        </button>
+        <button onclick="closeVictoryModal()" class="dos-btn px-4 py-1.5">
+          [ CLOSE BANNER ]
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 4. BOTTOM FUNCTION KEY RIBBON              -->
+  <!-- ========================================== -->
+  <footer class="bg-[#B0B0B0] text-black px-2 py-1 text-xs font-mono font-bold flex flex-wrap justify-between border-t-2 border-black select-none z-30">
+    <div class="flex flex-wrap gap-2">
+      <span class="hover:bg-black hover:text-white px-1 cursor-pointer" onclick="openDeckModal()">F1:Deck</span>
+      <span class="hover:bg-black hover:text-white px-1 cursor-pointer" onclick="triggerHostPause()">F2:Pause</span>
+      <span class="hover:bg-black hover:text-white px-1 cursor-pointer" onclick="quickSwitchView('board')">F3:Board</span>
+      <span class="hover:bg-black hover:text-white px-1 cursor-pointer" onclick="quickSwitchView('host')">F4:Host</span>
+      <span class="hover:bg-black hover:text-white px-1 cursor-pointer" onclick="joinRole('blue')">F5:TeamBlue</span>
+      <span class="hover:bg-black hover:text-white px-1 cursor-pointer" onclick="joinRole('red')">F6:TeamRed</span>
+    </div>
+    <div class="text-gray-800">
+      MS-DOS DEFRAG ENGINE v4.0 &bull; NORTON UTILITIES SIMULATOR
+    </div>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- 5. JAVASCRIPT GAME ENGINE (SOCKET.IO)      -->
+  <!-- ========================================== -->
   <script>
-    class SoundEngine {
-      constructor() { this.ctx = null; }
-      init() {
-        if (!this.ctx) {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          if (AudioCtx) this.ctx = new AudioCtx();
-        }
-      }
-      beep(freq = 440, type = 'square', duration = 0.08, vol = 0.1) {
-        try {
-          this.init();
-          if (!this.ctx) return;
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = type;
-          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-          gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start();
-          osc.stop(this.ctx.currentTime + duration);
-        } catch(e) {}
-      }
-      playCorrect() {
-        this.beep(523.25, 'triangle', 0.1, 0.15);
-        setTimeout(() => this.beep(659.25, 'triangle', 0.1, 0.15), 100);
-        setTimeout(() => this.beep(783.99, 'triangle', 0.25, 0.2), 200);
-      }
-      playIncorrect() {
-        this.beep(220, 'sawtooth', 0.15, 0.2);
-        setTimeout(() => this.beep(164.81, 'sawtooth', 0.35, 0.25), 120);
-      }
-      playAlarm() {
-        this.beep(880, 'square', 0.12, 0.2);
-        setTimeout(() => this.beep(440, 'square', 0.12, 0.2), 120);
+    /* -------------------------------------------------------------
+       AUDIO SYNTHESIZER (8-BIT PC-SPEAKER ENGINE)
+    -------------------------------------------------------------- */
+    let audioCtx = null;
+    let isSoundMuted = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
     }
 
-    const sound = new SoundEngine();
+    function playTone(freq, duration = 0.08, type = 'square', gainVal = 0.1) {
+      if (isSoundMuted) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
 
-    const defaultDeck = [
+    window.sfxKeyClick = function() { playTone(550 + Math.random() * 200, 0.02, 'triangle', 0.04); };
+    window.sfxCountdown = function(val) {
+      if (val > 0) playTone(440, 0.12, 'square', 0.18);
+      else { playTone(880, 0.22, 'square', 0.2); setTimeout(() => playTone(1174, 0.35, 'square', 0.2), 60); }
+    };
+    window.sfxCorrect = function() {
+      playTone(523.25, 0.1, 'square', 0.15);
+      setTimeout(() => playTone(659.25, 0.1, 'square', 0.15), 100);
+      setTimeout(() => playTone(783.99, 0.1, 'square', 0.15), 200);
+      setTimeout(() => playTone(1046.50, 0.25, 'square', 0.2), 300);
+    };
+    window.sfxIncorrect = function() {
+      playTone(180, 0.2, 'sawtooth', 0.25);
+      setTimeout(() => playTone(130, 0.3, 'sawtooth', 0.25), 150);
+    };
+    window.sfxTacticalAlert = function() {
+      playTone(900, 0.15, 'sawtooth', 0.25);
+      setTimeout(() => playTone(700, 0.15, 'sawtooth', 0.25), 140);
+      setTimeout(() => playTone(900, 0.15, 'sawtooth', 0.25), 280);
+      setTimeout(() => playTone(700, 0.15, 'sawtooth', 0.25), 420);
+    };
+    window.sfxVictory = function() {
+      const notes = [523, 523, 523, 659, 783, 659, 783, 1046];
+      notes.forEach((f, i) => setTimeout(() => playTone(f, 0.18, 'square', 0.15), i * 150));
+    };
+    window.toggleAudioMute = function() {
+      isSoundMuted = !isSoundMuted;
+      document.getElementById('muteBtn').innerText = isSoundMuted ? '[ 🔇 AUDIO: OFF ]' : '[ 🔊 AUDIO: ON ]';
+    };
+
+    /* -------------------------------------------------------------
+       DEFAULT DECK CONFIGURATION (6 Categories x 5 values)
+    -------------------------------------------------------------- */
+    const DEFAULT_DECK = [
       {
-        name: "CAPITALS",
+        category: "RETRO COMPUTING",
         clues: [
-          { val: 200, q: "Capital of France, known as the City of Light.", a: "Paris" },
-          { val: 400, q: "Capital of Japan, home to Shibuya Crossing.", a: "Tokyo" },
-          { val: 600, q: "Capital of Morocco, home to the Hassan Tower.", a: "Rabat" },
-          { val: 800, q: "Capital of Australia, situated between Sydney and Melbourne.", a: "Canberra" },
-          { val: 1000, q: "Capital of Iceland, the northernmost capital.", a: "Reykjavik" }
+          { value: 200, type: "text", q: "What does the 'DOS' in MS-DOS stand for?", a: "Disk Operating System" },
+          { value: 400, type: "text", q: "This classic DOS command displays the files and folders in the current directory.", a: "DIR" },
+          { value: 600, type: "text", q: "In conventional MS-DOS architecture, conventional RAM was famously capped at this amount.", a: "640 KB" },
+          { value: 800, type: "text", q: "Alongside CONFIG.SYS, this batch file ran automatically every time an MS-DOS machine booted.", a: "AUTOEXEC.BAT" },
+          { value: 1000, type: "text", q: "Which computer pioneer created Norton Utilities, Norton Commander, and the famous Speed Disk defragmenter?", a: "Peter Norton" }
         ]
       },
       {
-        name: "COMP 90s",
+        category: "WORLD GEOGRAPHY",
         clues: [
-          { val: 200, q: "Operating system released by Microsoft in 1995 with the Start button.", a: "Windows 95" },
-          { val: 400, q: "3.5-inch magnetic storage medium with 1.44 MB capacity.", a: "Floppy Disk" },
-          { val: 600, q: "Early web browser created by Marc Andreessen in 1993.", a: "Mosaic" },
-          { val: 800, q: "MS-DOS utility suite famous for defrag and data recovery.", a: "Norton Utilities" },
-          { val: 1000, q: "Intel processor architecture introduced in 1993 replacing 486.", a: "Pentium" }
+          { value: 200, type: "text", q: "What is the capital city of France?", a: "Paris" },
+          { value: 400, type: "text", q: "This North African country borders both the Mediterranean Sea and the Atlantic Ocean.", a: "Morocco" },
+          { value: 600, type: "text", q: "What is the largest hot desert in the world, stretching across North Africa?", a: "Sahara Desert" },
+          { value: 800, type: "text", q: "Mount Kilimanjaro, Africa's highest free-standing mountain, is located in which nation?", a: "Tanzania" },
+          { value: 1000, type: "text", q: "Which island country is also designated as an entire continent?", a: "Australia" }
         ]
       },
       {
-        name: "SCIENCE",
+        category: "CINEMA ICONS",
         clues: [
-          { val: 200, q: "Chemical element with symbol Au and atomic number 79.", a: "Gold" },
-          { val: 400, q: "Force that pulls objects toward Earth's center.", a: "Gravity" },
-          { val: 600, q: "Subatomic particle carrying a negative charge.", a: "Electron" },
-          { val: 800, q: "Process by which plants convert sunlight into chemical energy.", a: "Photosynthesis" },
-          { val: 1000, q: "Boundary around a black hole beyond which nothing escapes.", a: "Event Horizon" }
+          { value: 200, type: "text", q: "Which 1999 sci-fi movie features red pills, blue pills, and agent Smith?", a: "The Matrix" },
+          { value: 400, type: "image", mediaUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80", q: "Identify the sci-fi franchise and weapon type depicted in this glowing energy blade.", a: "Lightsaber / Star Wars" },
+          { value: 600, type: "text", q: "Who directed 'Inception', 'Interstellar', and 'Oppenheimer'?", a: "Christopher Nolan" },
+          { value: 800, type: "text", q: "In Pulp Fiction, what fictional Hawaiian-themed fast-food burger does Jules taste?", a: "Big Kahuna Burger" },
+          { value: 1000, type: "text", q: "Which film won the Best Picture Academy Award in 1994, beating The Shawshank Redemption and Pulp Fiction?", a: "Forrest Gump" }
         ]
       },
       {
-        name: "GAMING",
+        category: "SYNTH & AUDIO",
         clues: [
-          { val: 200, q: "Nintendo's Italian plumber in red overalls.", a: "Mario" },
-          { val: 400, q: "1993 id Software FPS featuring the Doomguy.", a: "Doom" },
-          { val: 600, q: "Alexey Pajitnov's puzzle game featuring falling tetrominoes.", a: "Tetris" },
-          { val: 800, q: "SEGA's flagship blue hedgehog who runs at supersonic speed.", a: "Sonic" },
-          { val: 1000, q: "Square's 1997 RPG masterpiece starring Cloud Strife.", a: "Final Fantasy VII" }
+          { value: 200, type: "audio", mediaUrl: "synth:c_major_scale", q: "Listen to the synthetic frequency sequence. Identify the foundational musical scale being played.", a: "C Major Scale" },
+          { value: 400, type: "audio", mediaUrl: "synth:80s_arpeggio", q: "Listen to this chiptune progression. Which decade revolutionized this 8-bit sound in arcades?", a: "1980s" },
+          { value: 600, type: "text", q: "Established in 1983, this acronym represents the universal electronic instrument communication standard.", a: "MIDI" },
+          { value: 800, type: "text", q: "Which electronics company introduced the world-famous Walkman portable cassette player in 1979?", a: "Sony" },
+          { value: 1000, type: "text", q: "What was the legendary 3-voice sound synthesis chip that powered the Commodore 64?", a: "SID (MOS Technology 6581)" }
         ]
       },
       {
-        name: "CINEMA",
+        category: "SCIENCE & NATURE",
         clues: [
-          { val: 200, q: "1997 James Cameron film about the doomed passenger liner.", a: "Titanic" },
-          { val: 400, q: "Sci-fi classic where Neo takes the red pill.", a: "The Matrix" },
-          { val: 600, q: "1994 film where Tom Hanks runs across America.", a: "Forrest Gump" },
-          { val: 800, q: "Dinosaur park thriller directed by Steven Spielberg in 1993.", a: "Jurassic Park" },
-          { val: 1000, q: "Quentin Tarantino's 1994 nonlinear crime classic.", a: "Pulp Fiction" }
+          { value: 200, type: "text", q: "What chemical element has the atomic number 8 and the symbol 'O'?", a: "Oxygen" },
+          { value: 400, type: "text", q: "Approximately what is the speed of light in vacuum in kilometers per second?", a: "300,000 km/s (299,792 km/s)" },
+          { value: 600, type: "text", q: "Which gas makes up roughly 78 percent of Earth's atmosphere?", a: "Nitrogen" },
+          { value: 800, type: "text", q: "What subatomic particle carries a negative electrical charge and orbits the atomic nucleus?", a: "Electron" },
+          { value: 1000, type: "text", q: "Often termed the 'powerhouse of the cell', which organelle produces ATP?", a: "Mitochondria" }
         ]
       },
       {
-        name: "AUDIO",
+        category: "GAMING LEGENDS",
         clues: [
-          { val: 200, q: "Musical keyboard instrument with 88 black and white keys.", a: "Piano" },
-          { val: 400, q: "Four-piece British rock band known as the Fab Four.", a: "The Beatles" },
-          { val: 600, q: "Audio format compression standard popularized in the late 90s.", a: "MP3" },
-          { val: 800, q: "Musical term indicating a gradual increase in loudness.", a: "Crescendo" },
-          { val: 1000, q: "Composer of the 9th Symphony who became completely deaf.", a: "Beethoven" }
+          { value: 200, type: "text", q: "What color is Nintendo's plumber hero Mario's cap and shirt?", a: "Red" },
+          { value: 400, type: "text", q: "In 1993, id Software sparked a revolution in PC gaming by unleashing this demonic FPS.", a: "DOOM" },
+          { value: 600, type: "text", q: "What is the name of the green-clad protagonist in Nintendo's The Legend of Zelda?", a: "Link" },
+          { value: 800, type: "text", q: "In Minecraft, what indestructible block is generated when running water touches lava source blocks?", a: "Obsidian" },
+          { value: 1000, type: "text", q: "Released in 1972 by Ralph Baer, what was the first commercial home video game console?", a: "Magnavox Odyssey" }
         ]
       }
     ];
 
-    class JeopardyApp {
-      constructor() {
-        this.socket = (typeof io !== "undefined") ? io() : null;
-        this.deck = defaultDeck;
-        this.hostPIN = "1337";
+    /* -------------------------------------------------------------
+       STATE MANAGEMENT & MULTI-DEVICE SOCKET.IO ENGINE
+    -------------------------------------------------------------- */
+    const socket = (typeof io !== 'undefined') ? io() : null;
+    const localBus = new BroadcastChannel('dos_jeopardy_sync_bus');
 
-        this.role = localStorage.getItem("jeopardy_role") || "spectator";
-        this.username = localStorage.getItem("jeopardy_name") || "Operator1";
+    let myRole = localStorage.getItem('dos_player_role') || 'board';
+    let myPlayerName = localStorage.getItem('dos_player_name') || ("Operator_" + Math.floor(100 + Math.random() * 900));
+    let hostPin = '1337';
+    let isHostAuthenticated = (localStorage.getItem('dos_is_host') === 'true');
 
-        this.state = {
-          gameStarted: true,
-          activeTurn: "blue",
-          scores: { blue: 0, red: 0 },
-          clearedTiles: {},
-          currentClue: null,
-          timerRemaining: 60,
-          timerRunning: false,
-          isPaused: false,
-          activeChallenger: null,
-          submittedAnswer: "",
-          submittedBy: "",
-          roster: { host: null, blue: [], red: [], spectators: [] }
-        };
+    let gameDeck = JSON.parse(localStorage.getItem('dos_jeopardy_deck') || JSON.stringify(DEFAULT_DECK));
 
-        this.timerInterval = null;
-        this.init();
+    let gameState = {
+      scores: { blue: 0, red: 0 },
+      selectingTeam: 'blue',
+      selectionTimer: 20,
+      selectionTimerRunning: false,
+      clearedClues: [],
+      phase: 'SELECTION', // 'SELECTION', 'SELECTION_TIMEOUT', 'HOST_CONFIRM', 'COUNTDOWN', 'MEDIA_PLAYING', 'THINKING', 'THINKING_TIMEOUT', 'TYPING', 'TYPING_TIMEOUT', 'STEAL_THINKING', 'STEAL_TYPING', 'HOST_JUDGING', 'GAME_OVER'
+      activeClue: null,
+      pendingHostClue: null,
+      timer: 60,
+      timerRunning: false,
+      isPaused: false,
+      isTacticalGambleUsed: false,
+      challengerTeam: null,
+      turnSubmittingTeam: null,
+      liveDraft: { author: "", text: "" },
+      lockedSubmission: null,
+      lastSelectionAttribution: null,
+      tacticalAlert: null,
+      logs: ["[00:00:00] MS-DOS DEFRAG ENGINE v4.0 READY. Render Socket Online."],
+      roster: { blue: 0, red: 0 }
+    };
+
+    function syncState(broadcastSound = null) {
+      renderAll();
+      const payload = { type: 'STATE_UPDATE', state: gameState, sfx: broadcastSound };
+      if (socket && socket.connected) {
+        socket.emit('game_message', payload);
       }
+      localBus.postMessage(payload);
+    }
 
-      init() {
-        document.getElementById("ribbon-callsign").value = this.username;
-        document.getElementById("ribbon-role").value = this.role;
-
-        this.bindEvents();
-        this.setupSocket();
-        this.renderBoard();
-        this.updateUI();
-        this.log("[DISK] Corporate archive connected.");
-        this.log("[SCAN] Norton Speed Disk online. Select a cluster.");
-      }
-
-      log(msg) {
-        const logBox = document.getElementById("system-log");
-        const time = new Date().toTimeString().split(" ")[0];
-        if (logBox) {
-          logBox.textContent += `[${time}] ${msg}\n`;
-          logBox.scrollTop = logBox.scrollHeight;
+    if (socket) {
+      socket.on('game_message', (data) => {
+        if (!data) return;
+        if (data.type === 'STATE_UPDATE') {
+          gameState = data.state;
+          if (data.sfx === 'tactical') window.sfxTacticalAlert();
+          if (data.sfx === 'correct') window.sfxCorrect();
+          if (data.sfx === 'incorrect') window.sfxIncorrect();
+          if (data.sfx === 'victory') window.sfxVictory();
+          renderAll();
+        } else if (data.type === 'LIVE_KEY') {
+          gameState.liveDraft = data.liveDraft;
+          renderLiveTypingDrafts();
         }
+      });
+    }
+
+    localBus.onmessage = (e) => {
+      const data = e.data;
+      if (!data) return;
+      if (data.type === 'STATE_UPDATE') {
+        gameState = data.state;
+        renderAll();
+      } else if (data.type === 'LIVE_KEY') {
+        gameState.liveDraft = data.liveDraft;
+        renderLiveTypingDrafts();
       }
+    };
 
-      resetSession() {
-        if (confirm("Reset login name, role, and PIN lockout cache?")) {
-          localStorage.clear();
-          location.reload();
-        }
+    window.resetClientSession = function() {
+      if (confirm("Reset callsign, role, and PIN lockout cache?")) {
+        localStorage.clear();
+        location.reload();
       }
+    };
 
-      showHelp() {
-        alert("MS-DOS JEOPARDY // NORTON SPEED DISK\n\n1. Select your Role in the top ribbon.\n2. Click any tile to open the question sector.\n3. The timer remains paused until the Host clicks START 60s.\n4. Type answer in the box and hit ENTER to submit.");
+    /* -------------------------------------------------------------
+       CUSTOM RETRO DOS MODAL DIALOGS
+    -------------------------------------------------------------- */
+    window.showDosModal = function(title, body, onConfirm = null, onCancel = null) {
+      document.getElementById('dosMessageTitle').innerText = title;
+      document.getElementById('dosMessageBody').innerText = body;
+      const actions = document.getElementById('dosMessageActions');
+
+      if (onConfirm && onCancel) {
+        actions.innerHTML = `
+          <button id="modalBtnConfirm" class="dos-btn dos-btn-green px-4 py-1 text-xs font-bold">[ ENTER: CONFIRM ]</button>
+          <button id="modalBtnCancel" class="dos-btn dos-btn-red px-4 py-1 text-xs font-bold">[ ESC: CANCEL ]</button>
+        `;
+        document.getElementById('modalBtnConfirm').onclick = () => { closeDosMessageModal(); onConfirm(); };
+        document.getElementById('modalBtnCancel').onclick = () => { closeDosMessageModal(); onCancel(); };
+      } else {
+        actions.innerHTML = `<button onclick="closeDosMessageModal()" class="dos-btn px-5 py-1 text-xs font-bold">[ OK ]</button>`;
       }
+      document.getElementById('modalDosMessage').classList.remove('hidden');
+    };
 
-      updateCallsign(val) {
-        this.username = val.trim() || "Operator";
-        localStorage.setItem("jeopardy_name", this.username);
-        this.broadcastRoster();
+    window.closeDosMessageModal = function() {
+      document.getElementById('modalDosMessage').classList.add('hidden');
+    };
+
+    /* -------------------------------------------------------------
+       ANTI-BRUTE-FORCE PIN LOCKOUT
+    -------------------------------------------------------------- */
+    function checkPinLockoutActive() {
+      const lockoutUntil = parseInt(localStorage.getItem('dos_pin_lockout_until') || '0', 10);
+      if (Date.now() < lockoutUntil) {
+        const remainingDate = new Date(lockoutUntil).toTimeString().split(' ')[0];
+        document.getElementById('nahUhUnlockTime').innerText = remainingDate;
+        document.getElementById('modalNahUhLockout').classList.remove('hidden');
+        return true;
       }
+      return false;
+    }
 
-      changeRole(role) {
-        if (role === "host") {
-          this.requestHostAccess();
-          return;
-        }
-        this.role = role;
-        localStorage.setItem("jeopardy_role", role);
-        this.broadcastRoster();
-        this.updateUI();
-      }
+    window.closeNahUhModal = function() {
+      document.getElementById('modalNahUhLockout').classList.add('hidden');
+      switchViewRole('board');
+    };
 
-      requestHostAccess() {
-        document.getElementById("input-host-pin").value = "";
-        document.getElementById("pin-error-text").textContent = "";
-        document.getElementById("host-pin-modal").style.display = "flex";
-      }
+    function registerFailedPinAttempt() {
+      let attempts = parseInt(localStorage.getItem('dos_pin_failed_attempts') || '0', 10) + 1;
+      localStorage.setItem('dos_pin_failed_attempts', attempts);
 
-      verifyHostPIN() {
-        const pin = document.getElementById("input-host-pin").value;
-        if (pin === this.hostPIN) {
-          document.getElementById("host-pin-modal").style.display = "none";
-          this.role = "host";
-          localStorage.setItem("jeopardy_role", "host");
-          document.getElementById("ribbon-role").value = "host";
-          this.broadcastRoster();
-          this.updateUI();
-          sound.playCorrect();
-        } else {
-          sound.playIncorrect();
-          document.getElementById("pin-error-text").textContent = "Nah uh... Authentication Failed.";
-        }
-      }
-
-      setupSocket() {
-        if (!this.socket) return;
-        this.socket.on("connect", () => {
-          this.broadcastRoster();
-        });
-
-        this.socket.on("game_message", (msg) => {
-          switch (msg.type) {
-            case "STATE_UPDATE":
-              this.state = msg.state;
-              this.renderBoard();
-              this.updateUI();
-              break;
-            case "LIVE_TYPING":
-              this.handleLiveTyping(msg);
-              break;
-            case "CHALLENGE_TRIGGERED":
-              this.showTacticalAlert(msg.team, msg.player);
-              break;
-          }
-        });
-      }
-
-      broadcast(payload) {
-        if (this.socket) {
-          this.socket.emit("game_message", payload);
-        }
-      }
-
-      broadcastRoster() {
-        this.broadcast({
-          type: "ROSTER_JOIN",
-          user: this.username,
-          role: this.role
-        });
-      }
-
-      renderBoard() {
-        const grid = document.getElementById("jeopardy-grid");
-        if (!grid) return;
-        grid.innerHTML = "";
-
-        // Category headers
-        this.deck.forEach((cat) => {
-          const catEl = document.createElement("div");
-          catEl.className = "category-header";
-          catEl.textContent = cat.name;
-          grid.appendChild(catEl);
-        });
-
-        // 5 clue rows
-        for (let row = 0; row < 5; row++) {
-          for (let col = 0; col < 6; col++) {
-            const clue = this.deck[col]?.clues[row] || { val: (row + 1) * 200 };
-            const key = `${col}_${row}`;
-            const tile = document.createElement("div");
-            tile.className = "cluster-tile";
-
-            if (this.state.clearedTiles[key]) {
-              tile.classList.add("cleared");
-              tile.textContent = "░░░░";
-            } else {
-              tile.textContent = `$${clue.val}`;
-              tile.onclick = () => this.handleTileClick(col, row);
-            }
-            grid.appendChild(tile);
-          }
-        }
-      }
-
-      handleTileClick(col, row) {
-        const key = `${col}_${row}`;
-        if (this.state.clearedTiles[key]) return;
-
-        const cat = this.deck[col];
-        const clue = cat.clues[row];
-
-        this.state.currentClue = {
-          col, row,
-          catName: cat.name,
-          val: clue.val,
-          q: clue.q,
-          a: clue.a
-        };
-
-        // Reset timer to 60s and pause until host clicks START
-        this.state.timerRemaining = 60;
-        this.state.timerRunning = false;
-        this.state.activeChallenger = null;
-        clearInterval(this.timerInterval);
-
-        this.broadcastState();
-        this.log(`[SECTOR] Opened ${cat.name} $${clue.val} (Waiting for Host Timer).`);
-      }
-
-      /* Manual Timer Controls */
-      hostStartTimer(seconds = 60) {
-        if (this.role !== "host") return;
-        clearInterval(this.timerInterval);
-        this.state.timerRemaining = seconds;
-        this.state.timerRunning = true;
-        this.state.isPaused = false;
-
-        this.timerInterval = setInterval(() => {
-          if (this.state.isPaused) return;
-          this.state.timerRemaining--;
-
-          if (this.state.timerRemaining <= 5 && this.state.timerRemaining > 0) {
-            sound.beep(600, 'square', 0.05, 0.1);
-          }
-
-          if (this.state.timerRemaining <= 0) {
-            clearInterval(this.timerInterval);
-            this.state.timerRunning = false;
-            sound.beep(250, 'square', 0.3, 0.2);
-            this.log("[TIMER] Time expired.");
-          }
-          this.broadcastState();
-        }, 1000);
-
-        this.broadcastState();
-        this.log(`[HOST] Started ${seconds}s Timer.`);
-      }
-
-      togglePause() {
-        if (this.role !== "host") return;
-        this.state.isPaused = !this.state.isPaused;
-        this.broadcastState();
-      }
-
-      hostAddSeconds(delta) {
-        if (this.role !== "host") return;
-        this.state.timerRemaining += delta;
-        this.broadcastState();
-      }
-
-      skipThinking() {
-        if (this.role !== this.state.activeTurn && this.role !== "host") return;
-        this.hostStartTimer(15);
-        this.log(`[TACTICAL] ${this.role.toUpperCase()} skipped thinking -> 15s Typing.`);
-      }
-
-      triggerAnswerOrSkip() {
-        const defending = this.state.activeTurn === "blue" ? "red" : "blue";
-        if (this.role !== defending && this.role !== "host") return;
-
-        this.state.activeChallenger = defending;
-        sound.playAlarm();
-
-        this.showTacticalAlert(defending, this.username);
-        this.broadcast({
-          type: "CHALLENGE_TRIGGERED",
-          team: defending,
-          player: this.username
-        });
-
-        // Abort thinking, force 15s typing
-        this.hostStartTimer(15);
-      }
-
-      showTacticalAlert(team, player) {
-        const banner = document.getElementById("alert-banner");
-        const bannerText = document.getElementById("alert-banner-text");
-        bannerText.textContent = `TEAM ${team.toUpperCase()} TRIGGERED "ANSWER OR SKIP" BY OPERATOR: ${player}!`;
-        banner.style.display = "block";
-        setTimeout(() => banner.style.display = "none", 5000);
-      }
-
-      bindEvents() {
-        const input = document.getElementById("modal-answer-input");
-        if (input) {
-          input.addEventListener("input", (e) => {
-            this.broadcast({
-              type: "LIVE_TYPING",
-              user: this.username,
-              team: this.role,
-              text: e.target.value
-            });
-            sound.beep(800, 'square', 0.02, 0.02);
-          });
-
-          input.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") this.submitAnswer();
-          });
-        }
-      }
-
-      handleLiveTyping(msg) {
-        const userEl = document.getElementById("stream-user");
-        const textEl = document.getElementById("stream-text");
-        if (userEl && textEl) {
-          userEl.textContent = `${msg.user} (${msg.team.toUpperCase()})`;
-          textEl.textContent = msg.text;
-        }
-      }
-
-      submitAnswer() {
-        const input = document.getElementById("modal-answer-input");
-        const val = input.value.trim();
-        if (!val) return;
-
-        this.state.submittedAnswer = val;
-        this.state.submittedBy = `${this.username} (${this.role.toUpperCase()})`;
-        this.state.timerRunning = false;
-        clearInterval(this.timerInterval);
-
-        this.broadcastState();
-        this.log(`[SUBMIT] ${this.state.submittedBy}: "${val}"`);
-        input.value = "";
-      }
-
-      hostJudge(isCorrect) {
-        if (this.role !== "host") return;
-        const clue = this.state.currentClue;
-        if (!clue) return;
-
-        clearInterval(this.timerInterval);
-        this.state.timerRunning = false;
-
-        if (isCorrect) {
-          sound.playCorrect();
-          const targetTeam = this.state.activeTurn;
-          this.state.scores[targetTeam] += clue.val;
-          this.log(`[JUDGE] Host confirmed correct (+ $${clue.val} to ${targetTeam.toUpperCase()}).`);
-          this.closeClueTurn();
-        } else {
-          sound.playIncorrect();
-          if (this.state.activeChallenger) {
-            this.state.scores[this.state.activeChallenger] -= clue.val;
-            this.log(`[PENALTY] ${this.state.activeChallenger.toUpperCase()} missed challenge (- $${clue.val}).`);
-          }
-          this.closeClueTurn();
-        }
-
-        this.broadcastState();
-      }
-
-      closeClueTurn() {
-        if (this.state.currentClue) {
-          const key = `${this.state.currentClue.col}_${this.state.currentClue.row}`;
-          this.state.clearedTiles[key] = true;
-        }
-        this.state.currentClue = null;
-        this.state.activeChallenger = null;
-        this.state.submittedAnswer = "";
-        this.state.submittedBy = "";
-
-        // Strictly alternate chooser
-        this.state.activeTurn = this.state.activeTurn === "blue" ? "red" : "blue";
-        this.state.timerRemaining = 60;
-        this.state.timerRunning = false;
-
-        this.broadcastState();
-        this.log(`[TURN] Swapped chooser to: TEAM ${this.state.activeTurn.toUpperCase()}.`);
-      }
-
-      closeClueModal() {
-        if (this.role !== "host") return;
-        this.state.currentClue = null;
-        this.broadcastState();
-      }
-
-      hostVoidSubmission() {
-        if (this.role !== "host") return;
-        this.state.submittedAnswer = "";
-        this.state.submittedBy = "";
-        this.hostStartTimer(15);
-        this.log("[HOST] Submission voided. 15s timer refunded.");
-      }
-
-      broadcastState() {
-        this.broadcast({
-          type: "STATE_UPDATE",
-          state: this.state
-        });
-        this.renderBoard();
-        this.updateUI();
-      }
-
-      updateUI() {
-        // Scores & Turn
-        document.getElementById("val-blue-dp").textContent = `$${this.state.scores.blue}`;
-        document.getElementById("val-red-dp").textContent = `$${this.state.scores.red}`;
-
-        const turnBadge = document.getElementById("ribbon-turn");
-        turnBadge.textContent = `TURN: TEAM ${this.state.activeTurn.toUpperCase()}`;
-        turnBadge.style.color = this.state.activeTurn === "blue" ? "var(--dos-bg)" : "#ffffff";
-        turnBadge.style.background = this.state.activeTurn === "blue" ? "var(--dos-cyan)" : "var(--dos-red)";
-
-        document.getElementById("est-turn").textContent = `TEAM ${this.state.activeTurn.toUpperCase()}`;
-
-        // Estimate box
-        document.getElementById("est-timer").textContent = `${this.state.timerRemaining}s ${this.state.timerRunning ? '' : '[PAUSED]'}`;
-        document.getElementById("est-reward").textContent = this.state.currentClue ? `$${this.state.currentClue.val} DP` : "-- DP";
-        
-        const riskEl = document.getElementById("est-risk");
-        if (this.state.activeChallenger) {
-          riskEl.textContent = `CRITICAL (-$${this.state.currentClue?.val})`;
-          riskEl.className = "color-red";
-        } else {
-          riskEl.textContent = "NORMAL ($0)";
-          riskEl.className = "color-green";
-        }
-
-        // Cleared count
-        const clearedNum = Object.keys(this.state.clearedTiles).length;
-        document.getElementById("val-cleared-count").textContent = clearedNum;
-        const pct = Math.round((clearedNum / 30) * 100);
-        document.getElementById("disk-pct").textContent = `${pct}%`;
-
-        const filledBlocks = Math.floor(pct / 4);
-        const emptyBlocks = 25 - filledBlocks;
-        document.getElementById("disk-status-bar").textContent = `[${"█".repeat(filledBlocks)}${"░".repeat(Math.max(0, emptyBlocks))}] ${pct}%`;
-
-        // Roster labels
-        document.getElementById("legend-roster-blue").textContent = `BLUE: ${this.state.roster.blue.join(", ") || "(None)"}`;
-        document.getElementById("legend-roster-red").textContent = `RED: ${this.state.roster.red.join(", ") || "(None)"}`;
-
-        // Clue Modal Presentation
-        const modal = document.getElementById("clue-overlay");
-        if (this.state.currentClue) {
-          modal.classList.add("active");
-          document.getElementById("clue-cat-title").textContent = `${this.state.currentClue.catName} // $${this.state.currentClue.val}`;
-          document.getElementById("clue-turn-indicator").textContent = `CHOOSER: TEAM ${this.state.activeTurn.toUpperCase()}`;
-          document.getElementById("clue-question-content").textContent = this.state.currentClue.q;
-          document.getElementById("clue-timer-readout").textContent = `${this.state.timerRemaining}s`;
-          document.getElementById("clue-timer-state").textContent = this.state.timerRunning ? (this.state.isPaused ? "[TIMER PAUSED BY HOST]" : "[TIMER ACTIVE]") : "[TIMER PAUSED — WAITING FOR HOST TO START]";
-
-          // Input Line: show if player is on the active team
-          const isMyTurn = this.role === this.state.activeTurn;
-          document.getElementById("player-input-row").style.display = isMyTurn ? "block" : "none";
-
-          // Action buttons
-          document.getElementById("btn-modal-skip").style.display = isMyTurn ? "inline-flex" : "none";
-          document.getElementById("btn-modal-challenge").style.display = (!isMyTurn && (this.role === "blue" || this.role === "red")) ? "inline-flex" : "none";
-
-          // Host bar
-          document.getElementById("modal-host-bar").style.display = this.role === "host" ? "flex" : "none";
-        } else {
-          modal.classList.remove("active");
-        }
+      if (attempts >= 3) {
+        const lockUntil = Date.now() + 15 * 60 * 1000;
+        localStorage.setItem('dos_pin_lockout_until', lockUntil);
+        localStorage.setItem('dos_pin_failed_attempts', '0');
+        window.sfxIncorrect();
+        checkPinLockoutActive();
+        addEventLog("[SECURITY] Excessive host PIN failures. Terminal locked 15m.");
+      } else {
+        window.sfxIncorrect();
+        window.showDosModal("ACCESS DENIED", `Invalid Host Master PIN. Attempt ${attempts} of 3 before lockout.`);
       }
     }
 
-    const app = new JeopardyApp();
+    /* -------------------------------------------------------------
+       ROLE MANAGEMENT (TEAM-HOPPING PERMITTED FOR TESTING)
+    -------------------------------------------------------------- */
+    window.openLobbyModal = function() {
+      window.sfxKeyClick();
+      document.getElementById('lobbyPlayerNameInput').value = myPlayerName;
+      document.getElementById('modalLobby').classList.remove('hidden');
+    };
+
+    window.closeLobbyModal = function() {
+      document.getElementById('modalLobby').classList.add('hidden');
+    };
+
+    window.joinRole = function(targetRole) {
+      window.sfxKeyClick();
+      const enteredName = document.getElementById('lobbyPlayerNameInput').value.trim();
+      if (enteredName) {
+        myPlayerName = enteredName;
+        localStorage.setItem('dos_player_name', myPlayerName);
+      }
+
+      if (targetRole === 'host') {
+        if (checkPinLockoutActive()) return;
+        const pinEntered = document.getElementById('lobbyHostPinInput').value.trim();
+        if (pinEntered === hostPin) {
+          isHostAuthenticated = true;
+          localStorage.setItem('dos_is_host', 'true');
+          localStorage.setItem('dos_pin_failed_attempts', '0');
+          window.sfxCorrect();
+          closeLobbyModal();
+          switchViewRole('host');
+          addEventLog(`[AUTH] Host console accessed by ${myPlayerName}.`);
+          return;
+        } else {
+          registerFailedPinAttempt();
+          return;
+        }
+      }
+
+      localStorage.setItem('dos_player_role', targetRole);
+      closeLobbyModal();
+      switchViewRole(targetRole);
+    };
+
+    window.quickSwitchView = function(role) {
+      if (role === 'host' && !isHostAuthenticated) {
+        openLobbyModal();
+      } else {
+        switchViewRole(role);
+      }
+    };
+
+    function switchViewRole(role) {
+      myRole = role;
+      localStorage.setItem('dos_player_role', role);
+
+      document.getElementById('viewBoard').classList.remove('hidden'); // Everyone sees board
+      const hostConsole = document.getElementById('viewHost');
+      const hostControls = document.getElementById('hostQuickBarControls');
+      const pill = document.getElementById('playerRolePill');
+
+      if (role === 'host') {
+        hostConsole.classList.remove('hidden');
+        hostControls.classList.remove('hidden');
+        pill.innerText = "ROLE: 👑 HOST MASTER";
+        pill.className = "hidden sm:inline bg-black text-red-400 px-2 py-0.5 border border-red-500 font-mono";
+      } else {
+        hostConsole.classList.add('hidden');
+        hostControls.classList.add('hidden');
+        if (role === 'board') {
+          pill.innerText = "ROLE: BOARD (SPECTATOR)";
+          pill.className = "hidden sm:inline bg-black text-yellow-300 px-2 py-0.5 border border-yellow-400 font-mono";
+        } else {
+          pill.innerText = `ROLE: ${role === 'blue' ? '🔵 TEAM BLUE' : '🔴 TEAM RED'}`;
+          pill.className = role === 'blue'
+            ? "hidden sm:inline bg-black text-cyan-300 px-2 py-0.5 border border-cyan-400 font-mono"
+            : "hidden sm:inline bg-black text-red-400 px-2 py-0.5 border border-red-400 font-mono";
+        }
+      }
+      renderAll();
+    }
+
+    /* -------------------------------------------------------------
+       HOST-ONLY AUTHORITATIVE TIMER LOOP (PREVENTS ACCELERATION)
+    -------------------------------------------------------------- */
+    setInterval(() => {
+      const now = new Date();
+      document.getElementById('dosClock').innerText = now.toTimeString().split(' ')[0];
+
+      // Only the Host computes the active clock countdown!
+      if (myRole !== 'host') return;
+      if (gameState.isPaused || gameState.phase === 'HOST_CONFIRM' || gameState.phase === 'GAME_OVER') return;
+
+      // Selection Timer
+      if (gameState.phase === 'SELECTION' && gameState.selectionTimerRunning) {
+        if (gameState.selectionTimer > 0) {
+          gameState.selectionTimer--;
+          if (gameState.selectionTimer === 3) window.sfxCountdown(3);
+          syncState();
+        } else {
+          // Time expired on selection: freeze and do NOT automate!
+          gameState.selectionTimerRunning = false;
+          gameState.phase = 'SELECTION_TIMEOUT';
+          addEventLog(`[SELECTION EXPIRED] Time up for ${gameState.selectingTeam.toUpperCase()}. Awaiting Host.`);
+          syncState();
+        }
+      }
+      // Clue Timers (Thinking / Typing)
+      else if (['THINKING', 'TYPING', 'STEAL_THINKING', 'STEAL_TYPING'].includes(gameState.phase) && gameState.timerRunning) {
+        if (gameState.timer > 0) {
+          gameState.timer--;
+          if (gameState.timer <= 3 && gameState.timer > 0) window.sfxCountdown(gameState.timer);
+          syncState();
+        } else {
+          // Time expired: freeze and do NOT automate!
+          gameState.timerRunning = false;
+          if (gameState.phase === 'THINKING') gameState.phase = 'THINKING_TIMEOUT';
+          else if (gameState.phase === 'TYPING' || gameState.phase === 'STEAL_TYPING') gameState.phase = 'TYPING_TIMEOUT';
+          else if (gameState.phase === 'STEAL_THINKING') gameState.phase = 'THINKING_TIMEOUT';
+          window.sfxIncorrect();
+          addEventLog(`[TIME EXPIRED] Phase elapsed. Awaiting Host action.`);
+          syncState();
+        }
+      }
+    }, 1000);
+
+    function addEventLog(msg) {
+      const time = new Date().toTimeString().split(' ')[0];
+      gameState.logs.unshift(`[${time}] ${msg}`);
+      if (gameState.logs.length > 30) gameState.logs.pop();
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const box = document.getElementById('dosEventLogs');
+      if (!box) return;
+      box.innerHTML = gameState.logs.slice(0, 5).map(l => `<div class="truncate">${escapeHtml(l)}</div>`).join('');
+    }
+
+    /* -------------------------------------------------------------
+       RENDERING ENGINE
+    -------------------------------------------------------------- */
+    function renderAll() {
+      renderBoardHUD();
+      renderBoardGrid();
+      renderPersistentInputBar();
+      renderHostDashboard();
+      renderClueStage();
+      renderLogs();
+    }
+
+    function renderBoardHUD() {
+      document.getElementById('boardBlueScore').innerText = `$ ${gameState.scores.blue}`;
+      document.getElementById('boardRedScore').innerText = `$ ${gameState.scores.red}`;
+
+      const isBlue = gameState.selectingTeam === 'blue';
+      const hudBlue = document.getElementById('hudBlueBox');
+      const hudRed = document.getElementById('hudRedBox');
+      const badgeBlue = document.getElementById('badgeBlueActive');
+      const badgeRed = document.getElementById('badgeRedActive');
+
+      if (isBlue) {
+        hudBlue.classList.add('border-yellow-300', 'bg-[#000080]');
+        hudRed.classList.remove('border-yellow-300', 'bg-[#000080]');
+        badgeBlue.classList.remove('hidden');
+        badgeRed.classList.add('hidden');
+        document.getElementById('boardBlueStatus').innerText = "CHOOSING";
+        document.getElementById('boardRedStatus').innerText = "DEFENDING";
+      } else {
+        hudRed.classList.add('border-yellow-300', 'bg-[#000080]');
+        hudBlue.classList.remove('border-yellow-300', 'bg-[#000080]');
+        badgeRed.classList.remove('hidden');
+        badgeBlue.classList.add('hidden');
+        document.getElementById('boardRedStatus').innerText = "CHOOSING";
+        document.getElementById('boardBlueStatus').innerText = "DEFENDING";
+      }
+
+      const turnBadge = document.getElementById('turnIndicatorBadge');
+      turnBadge.innerText = `${gameState.selectingTeam.toUpperCase()} (SELECTING)`;
+      turnBadge.className = isBlue
+        ? "px-2 py-0.5 font-bold uppercase border border-cyan-400 bg-cyan-950 text-cyan-300"
+        : "px-2 py-0.5 font-bold uppercase border border-red-400 bg-red-950 text-red-300";
+
+      let timerBadgeText = `[ ${gameState.selectionTimer}s ${gameState.selectionTimerRunning ? 'RUNNING' : 'PAUSED'} ]`;
+      if (gameState.phase === 'SELECTION_TIMEOUT') timerBadgeText = "[ TIME EXPIRED — WAITING HOST ]";
+      else if (gameState.phase !== 'SELECTION') timerBadgeText = `[ ${gameState.phase.replace('_', ' ')} ]`;
+      document.getElementById('turnTimerBadge').innerText = timerBadgeText;
+
+      const activeVal = gameState.activeClue ? gameState.activeClue.value : 0;
+      document.getElementById('telemetryValue').innerText = `$ ${activeVal}`;
+
+      const riskLabel = document.getElementById('telemetryRisk');
+      if (gameState.isTacticalGambleUsed) {
+        riskLabel.innerText = `HIGH RISK (-$${activeVal} ON MISS)`;
+        riskLabel.className = "text-red-400 font-bold animate-pulse";
+      } else {
+        riskLabel.innerText = "NORMAL ($0 MISS)";
+        riskLabel.className = "text-green-400";
+      }
+
+      if (gameState.lastSelectionAttribution) {
+        const att = gameState.lastSelectionAttribution;
+        document.getElementById('telemetryLastPick').innerText = `${att.player} (${att.catName} $${att.val})`;
+        document.getElementById('boardActionAttribution').innerText = `SELECTED BY: [${att.player} (${att.team.toUpperCase()})] -> [${att.catName} // $${att.val}]`;
+      }
+
+      const cleared = gameState.clearedClues.length;
+      document.getElementById('headerTilesLeft').innerText = `${30 - cleared}/30`;
+    }
+
+    function renderBoardGrid() {
+      const headersBox = document.getElementById('boardCategoryHeaders');
+      const tilesBox = document.getElementById('boardTilesGrid');
+      if (!headersBox || !tilesBox) return;
+
+      headersBox.innerHTML = gameDeck.map((cat, i) => `
+        <div class="bg-[#000060] border border-cyan-400 p-1 truncate text-yellow-300">
+          <div class="text-[9px] text-gray-400">CAT 0${i + 1}</div>
+          <div class="truncate uppercase text-xs">${escapeHtml(cat.category)}</div>
+        </div>
+      `).join('');
+
+      let html = '';
+      const values = [200, 400, 600, 800, 1000];
+
+      // Grid is interactable only for selecting team or host during SELECTION
+      const canClick = (myRole === gameState.selectingTeam || myRole === 'host') && (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT');
+
+      values.forEach((val, valIdx) => {
+        gameDeck.forEach((cat, catIdx) => {
+          const key = `${catIdx}-${valIdx}`;
+          const isCleared = gameState.clearedClues.includes(key);
+          const clue = cat.clues[valIdx];
+
+          if (isCleared) {
+            html += `
+              <div class="bg-[#00003c] border border-gray-700 text-gray-600 p-2 sm:p-3 flex items-center justify-center font-bold text-xs select-none">
+                ░░░░
+              </div>
+            `;
+          } else {
+            html += `
+              <button onclick="handleTileClick(${catIdx}, ${valIdx})" ${canClick ? '' : 'disabled style="pointer-events: none; opacity: 0.8;"'} 
+                class="dos-btn p-2 sm:p-3 flex flex-col items-center justify-center font-bold text-xs sm:text-sm text-yellow-300 hover:scale-105 transition-transform ${canClick ? 'border-yellow-300' : 'border-cyan-400'}">
+                <span>$ ${val}</span>
+                <span class="text-[8px] text-cyan-300 font-normal">
+                  ${clue.type === 'audio' ? '♫ AUDIO' : clue.type === 'image' ? '🖼 PHOTO' : 'TXT'}
+                </span>
+              </button>
+            `;
+          }
+        });
+      });
+
+      tilesBox.innerHTML = html;
+    }
+
+    function renderPersistentInputBar() {
+      const barTitle = document.getElementById('persistentBarTitle');
+      const input = document.getElementById('persistentAnswerInput');
+      const btnSubmit = document.getElementById('btnPersistentSubmit');
+      const btnSkip = document.getElementById('btnPersistentSkip');
+      const btnChallenge = document.getElementById('btnPersistentChallenge');
+
+      const isAnsweringSquad = (myRole === gameState.turnSubmittingTeam);
+      const isDefendingSquad = (myRole === (gameState.turnSubmittingTeam === 'blue' ? 'red' : 'blue'));
+
+      // Check if typing allowed right now
+      const isTypingPhase = (gameState.phase === 'TYPING' || gameState.phase === 'STEAL_TYPING');
+      const isThinkingPhase = (gameState.phase === 'THINKING' || gameState.phase === 'STEAL_THINKING');
+
+      if (isAnsweringSquad && isTypingPhase) {
+        barTitle.innerText = `─ SQUADRON ${myRole.toUpperCase()} INPUT [15s TYPING ACTIVE] ─`;
+        input.disabled = !!gameState.lockedSubmission;
+        input.placeholder = gameState.lockedSubmission ? "[ ANSWER LOCKED IN ]" : "Type your answer and press ENTER...";
+        btnSubmit.disabled = !!gameState.lockedSubmission;
+      } else if (isAnsweringSquad && isThinkingPhase) {
+        barTitle.innerText = `─ SQUADRON ${myRole.toUpperCase()} INPUT [THINKING PHASE] ─`;
+        input.disabled = true;
+        input.placeholder = "[ 60s THINKING — DISCUSS WITH TEAM OR CLICK READY TO ANSWER ]";
+        btnSubmit.disabled = true;
+      } else {
+        barTitle.innerText = `─ SQUADRON TRANSMISSION TERMINAL [STANDBY] ─`;
+        input.disabled = true;
+        input.placeholder = "[ INPUT DISABLED — AWAITING YOUR SQUADRON'S TURN ]";
+        btnSubmit.disabled = true;
+      }
+
+      // Ready to answer button (Answering team during thinking)
+      if (isAnsweringSquad && isThinkingPhase) {
+        btnSkip.classList.remove('hidden');
+      } else {
+        btnSkip.classList.add('hidden');
+      }
+
+      // Tactical Challenge Button (Defending team during thinking)
+      if (isDefendingSquad && isThinkingPhase && !gameState.isTacticalGambleUsed) {
+        btnChallenge.classList.remove('hidden');
+      } else {
+        btnChallenge.classList.add('hidden');
+      }
+
+      renderLiveTypingDrafts();
+    }
+
+    function renderLiveTypingDrafts() {
+      const draft = gameState.liveDraft;
+      const persistentAuthor = document.getElementById('persistentLiveAuthor');
+      const persistentText = document.getElementById('persistentLiveText');
+      const persistentBadge = document.getElementById('persistentLiveTyperBadge');
+
+      const stageAuthor = document.getElementById('stageLiveTyperName');
+      const stageText = document.getElementById('stageLiveDraftText');
+
+      if (draft && draft.text) {
+        if (persistentAuthor) persistentAuthor.innerText = `${draft.author}:`;
+        if (persistentText) persistentText.innerText = draft.text;
+        if (persistentBadge) persistentBadge.classList.remove('hidden');
+        if (stageAuthor) stageAuthor.innerText = draft.author;
+        if (stageText) stageText.innerText = draft.text;
+      } else {
+        if (persistentAuthor) persistentAuthor.innerText = "Drafting:";
+        if (persistentText) persistentText.innerText = "...";
+        if (persistentBadge) persistentBadge.classList.add('hidden');
+        if (stageAuthor) stageAuthor.innerText = "Player";
+        if (stageText) stageText.innerText = "...";
+      }
+    }
+
+    function renderHostDashboard() {
+      const blueInput = document.getElementById('hostOverrideBlueInput');
+      const redInput = document.getElementById('hostOverrideRedInput');
+      if (document.activeElement !== blueInput) blueInput.value = gameState.scores.blue;
+      if (document.activeElement !== redInput) redInput.value = gameState.scores.red;
+
+      const pauseBtn = document.getElementById('hostPauseBtn');
+      pauseBtn.innerText = gameState.isPaused ? "[ ▶ RESUME CLOCK ]" : "[ ⏸ PAUSE CLOCK ]";
+
+      if (gameState.activeClue) {
+        const cat = gameDeck[gameState.activeClue.catIdx];
+        document.getElementById('hostCluePill').innerText = `${cat.category} - $${gameState.activeClue.value}`;
+        document.getElementById('hostCluePrompt').innerText = gameState.activeClue.q;
+        document.getElementById('hostSecretAnswer').innerText = cat.clues[gameState.activeClue.clueIdx].a;
+      } else {
+        document.getElementById('hostCluePill').innerText = "NO ACTIVE CLUE";
+        document.getElementById('hostCluePrompt').innerText = "Waiting for tile selection...";
+        document.getElementById('hostSecretAnswer').innerText = "[ NONE ]";
+      }
+
+      const btnCorrect = document.getElementById('btnHostCorrect');
+      const btnIncorrect = document.getElementById('btnHostIncorrect');
+      const submitPill = document.getElementById('hostSubmittingPlayerPill');
+      const answerStr = document.getElementById('hostAnswerString');
+      const statusTag = document.getElementById('hostAnswerStatusTag');
+
+      if (gameState.lockedSubmission) {
+        const sub = gameState.lockedSubmission;
+        submitPill.innerText = `SUBMITTED BY: ${sub.player} (${sub.team.toUpperCase()})`;
+        answerStr.innerText = `"${sub.text}"`;
+        statusTag.innerText = "LOCKED IN";
+        statusTag.className = "text-xs px-2 py-0.5 bg-green-900 text-green-300 font-bold border border-green-500";
+        btnCorrect.disabled = false;
+        btnIncorrect.disabled = false;
+      } else {
+        submitPill.innerText = gameState.turnSubmittingTeam ? `ACTIVE: ${gameState.turnSubmittingTeam.toUpperCase()}` : "WAITING";
+        answerStr.innerText = (gameState.phase === 'TYPING' || gameState.phase === 'STEAL_TYPING')
+          ? "[ TEAM IS TYPING... ]"
+          : "[ NO SUBMISSION YET ]";
+        statusTag.innerText = "PENDING";
+        statusTag.className = "text-xs px-2 py-0.5 bg-gray-800 text-gray-400 font-bold";
+        btnCorrect.disabled = true;
+        btnIncorrect.disabled = true;
+      }
+    }
+
+    function renderClueStage() {
+      const modal = document.getElementById('modalClueStage');
+      if (['COUNTDOWN', 'MEDIA_PLAYING', 'THINKING', 'THINKING_TIMEOUT', 'TYPING', 'TYPING_TIMEOUT', 'STEAL_THINKING', 'STEAL_TYPING', 'HOST_JUDGING'].includes(gameState.phase)) {
+        modal.classList.remove('hidden');
+      } else {
+        modal.classList.add('hidden');
+        return;
+      }
+
+      if (!gameState.activeClue) return;
+
+      const cat = gameDeck[gameState.activeClue.catIdx];
+      document.getElementById('stageCategoryName').innerText = cat.category;
+      document.getElementById('stageClueValue').innerText = `$ ${gameState.activeClue.value}`;
+      
+      let timerStr = `00:${gameState.timer < 10 ? '0' : ''}${gameState.timer}`;
+      if (!gameState.timerRunning) timerStr += " [PAUSED]";
+      document.getElementById('stageTimerClock').innerText = timerStr;
+      document.getElementById('boardPhaseClock').innerText = timerStr;
+
+      document.getElementById('stagePhaseBadge').innerText = gameState.phase.replace('_', ' ');
+      document.getElementById('stageActiveSquad').innerText = gameState.turnSubmittingTeam ? gameState.turnSubmittingTeam.toUpperCase() : "NONE";
+
+      const warn = document.getElementById('stageTacticalWarning');
+      if (gameState.isTacticalGambleUsed) {
+        warn.innerText = `⚠️ TACTICAL CHALLENGE EXECUTED BY ${gameState.challengerTeam.toUpperCase()}! (-$${gameState.activeClue.value} RISK)`;
+      } else {
+        warn.innerText = "";
+      }
+
+      const arcade = document.getElementById('stageArcadeCountdown');
+      const content = document.getElementById('stageContentLayer');
+
+      if (gameState.phase === 'COUNTDOWN') {
+        arcade.classList.remove('hidden');
+        content.classList.add('hidden');
+      } else {
+        arcade.classList.add('hidden');
+        content.classList.remove('hidden');
+        document.getElementById('stageCluePrompt').innerText = gameState.activeClue.q;
+        setupMediaStage();
+      }
+
+      const boardTyping = document.getElementById('stageLiveTypingBox');
+      if (['TYPING', 'STEAL_TYPING'].includes(gameState.phase)) {
+        boardTyping.classList.remove('hidden');
+        document.getElementById('stageLiveTypingSquad').innerText = `${gameState.turnSubmittingTeam.toUpperCase()} LIVE DRAFT:`;
+      } else {
+        boardTyping.classList.add('hidden');
+      }
+
+      const stageHostActions = document.getElementById('stageHostActions');
+      if (myRole === 'host') stageHostActions.classList.remove('hidden');
+      else stageHostActions.classList.add('hidden');
+    }
+
+    /* -------------------------------------------------------------
+       TILE CLICK & STATE-ROUTED HOST CONFIRMATION
+    -------------------------------------------------------------- */
+    window.handleTileClick = function(catIdx, valIdx) {
+      if (gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') return;
+      window.sfxKeyClick();
+
+      const clue = gameDeck[catIdx].clues[valIdx];
+      gameState.pendingHostClue = {
+        catIdx,
+        clueIdx: valIdx,
+        value: clue.value,
+        q: clue.q,
+        type: clue.type || 'text',
+        mediaUrl: clue.mediaUrl || ''
+      };
+
+      gameState.lastSelectionAttribution = {
+        team: gameState.selectingTeam,
+        player: myPlayerName,
+        catName: gameDeck[catIdx].category,
+        val: clue.value
+      };
+
+      // Freeze selection timer instantly
+      gameState.selectionTimerRunning = false;
+      gameState.phase = 'HOST_CONFIRM';
+      addEventLog(`[TILE CLICKED] ${gameDeck[catIdx].category} $${clue.value} by ${myPlayerName}. Awaiting Host confirmation.`);
+      syncState();
+    };
+
+    function renderHostConfirmModal() {
+      const modal = document.getElementById('modalHostConfirm');
+      if (gameState.phase === 'HOST_CONFIRM' && gameState.pendingHostClue) {
+        modal.classList.remove('hidden');
+        document.getElementById('confirmModalCategory').innerText = gameDeck[gameState.pendingHostClue.catIdx].category;
+        document.getElementById('confirmModalValue').innerText = `$ ${gameState.pendingHostClue.value}`;
+        document.getElementById('confirmModalTeam').innerText = gameState.selectingTeam.toUpperCase();
+        document.getElementById('confirmModalPlayer').innerText = gameState.lastSelectionAttribution?.player || "Player";
+
+        const hostBtns = document.getElementById('confirmModalHostButtons');
+        const nonHostNotice = document.getElementById('confirmModalNonHostNotice');
+
+        if (myRole === 'host') {
+          hostBtns.classList.remove('hidden');
+          nonHostNotice.classList.add('hidden');
+        } else {
+          hostBtns.classList.add('hidden');
+          nonHostNotice.classList.remove('hidden');
+        }
+      } else {
+        modal.classList.add('hidden');
+      }
+    }
+
+    window.hostConfirmClueExecution = function(confirmed) {
+      if (myRole !== 'host') return;
+      window.sfxKeyClick();
+
+      if (!confirmed) {
+        gameState.pendingHostClue = null;
+        gameState.phase = 'SELECTION';
+        gameState.selectionTimerRunning = true; // Resumes from the exact second paused!
+        addEventLog("[HOST ABORT] Tile rejected. Selection timer resumed.");
+        syncState();
+        return;
+      }
+
+      gameState.activeClue = { ...gameState.pendingHostClue };
+      gameState.pendingHostClue = null;
+      gameState.turnSubmittingTeam = gameState.selectingTeam;
+      gameState.isTacticalGambleUsed = false;
+      gameState.challengerTeam = null;
+      gameState.liveDraft = { author: "", text: "" };
+      gameState.lockedSubmission = null;
+
+      addEventLog(`[CLUE BROADCAST] ${gameDeck[gameState.activeClue.catIdx].category} $${gameState.activeClue.value} confirmed by Host.`);
+
+      if (gameState.activeClue.type === 'audio' || gameState.activeClue.type === 'image') {
+        startMediaPlaybackSequence();
+      } else {
+        startArcadeCountdown();
+      }
+    };
+
+    /* -------------------------------------------------------------
+       MEDIA BUFFER ENGINE
+    -------------------------------------------------------------- */
+    let mediaInterval = null;
+
+    function startMediaPlaybackSequence() {
+      gameState.phase = 'MEDIA_PLAYING';
+      syncState();
+
+      let progress = 0;
+      const totalTicks = 25;
+      const stageAscii = document.getElementById('stageMediaAscii');
+      const smallAscii = document.getElementById('segmentedAsciiBar');
+
+      if (gameState.activeClue.type === 'audio') synthesizeChiptuneAudio();
+
+      if (mediaInterval) clearInterval(mediaInterval);
+      mediaInterval = setInterval(() => {
+        if (gameState.isPaused) return;
+
+        progress++;
+        const pct = Math.min(100, Math.round((progress / totalTicks) * 100));
+        const filled = Math.round((pct / 100) * 32);
+        const barStr = '[' + '█'.repeat(filled) + '░'.repeat(32 - filled) + ']';
+
+        if (stageAscii) stageAscii.innerText = barStr;
+        if (smallAscii) smallAscii.innerText = barStr;
+
+        document.getElementById('stageMediaPct').innerText = `${pct}%`;
+        document.getElementById('mediaPercentLabel').innerText = `${pct}%`;
+        document.getElementById('mediaTimeSub').innerText = `00:0${Math.floor(progress / 5)} / 00:05`;
+
+        if (progress % 5 === 0) playTone(700, 0.03, 'sine', 0.04);
+
+        if (progress >= totalTicks) {
+          clearInterval(mediaInterval);
+          runMediaGraceBuffer(3);
+        }
+      }, 200);
+    }
+
+    function runMediaGraceBuffer(seconds) {
+      const lockBanner = document.getElementById('stageMediaLockBanner');
+      if (seconds > 0) {
+        if (lockBanner) lockBanner.innerText = `SYNC BUFFER: [ ${seconds}... ]`;
+        playTone(520, 0.06, 'triangle', 0.08);
+        setTimeout(() => runMediaGraceBuffer(seconds - 1), 1000);
+      } else {
+        if (lockBanner) lockBanner.innerText = "TRANSMISSION COMPLETE - UNLOCKED";
+        startArcadeCountdown();
+      }
+    }
+
+    function synthesizeChiptuneAudio() {
+      initAudio();
+      const notes = [261.6, 329.6, 392.0, 523.2, 659.2, 783.9, 1046.5];
+      notes.forEach((freq, idx) => setTimeout(() => playTone(freq, 0.22, 'square', 0.15), idx * 240));
+    }
+
+    window.replayAudioTrack = function() {
+      if (gameState.activeClue && gameState.activeClue.type === 'audio') synthesizeChiptuneAudio();
+    };
+
+    function setupMediaStage() {
+      const container = document.getElementById('stageMediaContainer');
+      const img = document.getElementById('stageClueImage');
+      const audioWrap = document.getElementById('stageClueAudioWrapper');
+
+      if (!gameState.activeClue || gameState.activeClue.type === 'text') {
+        container.classList.add('hidden');
+        return;
+      }
+      container.classList.remove('hidden');
+
+      if (gameState.activeClue.type === 'image') {
+        img.classList.remove('hidden');
+        audioWrap.classList.add('hidden');
+        img.src = gameState.activeClue.mediaUrl || "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80";
+      } else if (gameState.activeClue.type === 'audio') {
+        img.classList.add('hidden');
+        audioWrap.classList.remove('hidden');
+      }
+    }
+
+    /* -------------------------------------------------------------
+       ARCADE 3-2-1-GO & PAUSED 60S THINKING
+    -------------------------------------------------------------- */
+    function startArcadeCountdown() {
+      gameState.phase = 'COUNTDOWN';
+      syncState();
+
+      let count = 3;
+      const bigNum = document.getElementById('arcadeBigNumber');
+      bigNum.innerText = count;
+      window.sfxCountdown(count);
+
+      const interval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          bigNum.innerText = count;
+          window.sfxCountdown(count);
+        } else if (count === 0) {
+          bigNum.innerText = "GO!";
+          window.sfxCountdown(0);
+        } else {
+          clearInterval(interval);
+          // Thinking phase opens PAUSED at 60s!
+          gameState.phase = 'THINKING';
+          gameState.timer = 60;
+          gameState.timerRunning = false; // NEVER auto-starts!
+          addEventLog(`[CLUE REVEALED] Thinking phase paused at 60s. Waiting for Host to start timer.`);
+          syncState();
+        }
+      }, 1000);
+    }
+
+    /* -------------------------------------------------------------
+       HOST MANUAL TIMERS & ACTIONS
+    -------------------------------------------------------------- */
+    window.hostStartSelectionTimer = function() {
+      if (myRole !== 'host') return;
+      window.sfxKeyClick();
+      gameState.selectionTimer = 20;
+      gameState.selectionTimerRunning = true;
+      gameState.phase = 'SELECTION';
+      addEventLog("[HOST] 20s Category Selection timer started.");
+      syncState();
+    };
+
+    window.hostStartThinkingTimer = function() {
+      if (myRole !== 'host') return;
+      window.sfxKeyClick();
+      gameState.timerRunning = true;
+      gameState.isPaused = false;
+      addEventLog(`[HOST] ${gameState.timer}s countdown started.`);
+      syncState();
+    };
+
+    window.hostProceedToTyping = function() {
+      if (myRole !== 'host') return;
+      window.sfxKeyClick();
+      gameState.phase = 'TYPING';
+      gameState.timer = 15;
+      gameState.timerRunning = true;
+      addEventLog(`[HOST] Advanced to 15s Typing Phase.`);
+      syncState();
+    };
+
+    window.hostAddSeconds = function(sec) {
+      if (myRole !== 'host') return;
+      window.sfxKeyClick();
+      if (gameState.phase === 'SELECTION') gameState.selectionTimer += sec;
+      else gameState.timer += sec;
+      addEventLog(`[HOST] Added +${sec}s to active clock.`);
+      syncState();
+    };
+
+    window.hostForfeitSelection = function() {
+      if (myRole !== 'host') return;
+      window.sfxKeyClick();
+      gameState.selectingTeam = gameState.selectingTeam === 'blue' ? 'red' : 'blue';
+      gameState.selectionTimer = 20;
+      gameState.selectionTimerRunning = false;
+      gameState.phase = 'SELECTION';
+      addEventLog(`[HOST] Selection forfeited. Turn passed to ${gameState.selectingTeam.toUpperCase()}.`);
+      syncState();
+    };
+
+    /* -------------------------------------------------------------
+       TACTICAL "ANSWER OR SKIP" (GLOBAL 5S BANNER)
+    -------------------------------------------------------------- */
+    window.playerTriggerSkipThinking = function() {
+      const isAnswering = (myRole === gameState.turnSubmittingTeam || myRole === 'host');
+      if (!isAnswering) return;
+      window.sfxKeyClick();
+      gameState.phase = gameState.phase === 'STEAL_THINKING' ? 'STEAL_TYPING' : 'TYPING';
+      gameState.timer = 15;
+      gameState.timerRunning = true;
+      addEventLog(`[READY TO ANSWER] ${gameState.turnSubmittingTeam.toUpperCase()} skipped thinking -> 15s Typing starts!`);
+      syncState();
+    };
+
+    window.playerTriggerTacticalChallenge = function() {
+      const defending = gameState.turnSubmittingTeam === 'blue' ? 'red' : 'blue';
+      if (myRole !== defending && myRole !== 'host') return;
+
+      gameState.isTacticalGambleUsed = true;
+      gameState.challengerTeam = defending;
+
+      // Broadcast tactical challenge state to all
+      gameState.tacticalAlert = {
+        active: true,
+        player: myPlayerName,
+        team: defending
+      };
+
+      // Force 15s typing immediately
+      gameState.phase = 'TYPING';
+      gameState.timer = 15;
+      gameState.timerRunning = true;
+
+      addEventLog(`[⚠️ TACTICAL ALERT] TEAM ${defending.toUpperCase()} chose ANSWER OR SKIP by player: ${myPlayerName}! 60s thinking aborted!`);
+      syncState('tactical');
+
+      setTimeout(() => {
+        if (gameState.tacticalAlert) gameState.tacticalAlert.active = false;
+        syncState();
+      }, 5000);
+    };
+
+    function renderTacticalAlertModal() {
+      const banner = document.getElementById('modalTacticalBanner');
+      if (gameState.tacticalAlert && gameState.tacticalAlert.active) {
+        document.getElementById('tacticalBannerTeam').innerText = `TEAM ${gameState.tacticalAlert.team.toUpperCase()} HAS FORCED THE CLOCK!`;
+        document.getElementById('tacticalBannerPlayer').innerText = gameState.tacticalAlert.player;
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    /* -------------------------------------------------------------
+       KEYSTROKE DRAFTING & SUBMISSION (ENTER-KEY ENABLED)
+    -------------------------------------------------------------- */
+    const answerInput = document.getElementById('persistentAnswerInput');
+    answerInput.addEventListener('input', (e) => {
+      if (myRole !== gameState.turnSubmittingTeam) return;
+      window.sfxKeyClick();
+      gameState.liveDraft = { author: myPlayerName, text: e.target.value };
+      if (socket && socket.connected) {
+        socket.emit('game_message', { type: 'LIVE_KEY', liveDraft: gameState.liveDraft });
+      }
+      localBus.postMessage({ type: 'LIVE_KEY', liveDraft: gameState.liveDraft });
+      renderLiveTypingDrafts();
+    });
+
+    answerInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitPersistentAnswer();
+    });
+
+    window.submitPersistentAnswer = function() {
+      if (myRole !== gameState.turnSubmittingTeam) return;
+      if (!['TYPING', 'STEAL_TYPING'].includes(gameState.phase)) return;
+
+      const answerVal = answerInput.value.trim() || gameState.liveDraft.text.trim() || "[NO ANSWER]";
+      window.sfxKeyClick();
+
+      gameState.lockedSubmission = {
+        team: gameState.turnSubmittingTeam,
+        player: myPlayerName,
+        text: answerVal
+      };
+      gameState.phase = 'HOST_JUDGING';
+      gameState.timerRunning = false; // Freeze clock immediately on submit
+      answerInput.value = '';
+
+      addEventLog(`[ANSWER SUBMITTED] by ${myPlayerName} (${gameState.turnSubmittingTeam.toUpperCase()}): "${answerVal}"`);
+      syncState();
+    };
+
+    /* -------------------------------------------------------------
+       HOST JUDGING & TACTICAL RESOLUTION
+    -------------------------------------------------------------- */
+    window.hostAwardVerdict = function(isCorrect) {
+      if (myRole !== 'host') return;
+      if (!gameState.activeClue) return;
+
+      const clueVal = gameState.activeClue.value;
+      const answeringTeam = gameState.lockedSubmission ? gameState.lockedSubmission.team : gameState.turnSubmittingTeam;
+      const otherTeam = answeringTeam === 'blue' ? 'red' : 'blue';
+
+      if (isCorrect) {
+        window.sfxCorrect();
+        gameState.scores[answeringTeam] += clueVal;
+        addEventLog(`[JUDGE: CORRECT] +$${clueVal} awarded to ${answeringTeam.toUpperCase()}!`);
+        finishClueRound();
+      } else {
+        window.sfxIncorrect();
+        addEventLog(`[JUDGE: INCORRECT] Submission by ${answeringTeam.toUpperCase()} ruled incorrect.`);
+
+        if (gameState.isTacticalGambleUsed) {
+          if (answeringTeam !== gameState.challengerTeam) {
+            // Defending challenger gets 15s to answer
+            gameState.turnSubmittingTeam = gameState.challengerTeam;
+            gameState.phase = 'STEAL_TYPING';
+            gameState.timer = 15;
+            gameState.timerRunning = true;
+            gameState.lockedSubmission = null;
+            gameState.liveDraft = { author: "", text: "" };
+            addEventLog(`[CHALLENGE STEAL] ${gameState.challengerTeam.toUpperCase()} has 15s to answer. (-$${clueVal} if missed)`);
+            syncState('incorrect');
+          } else {
+            // Challenger failed gamble: full penalty
+            gameState.scores[gameState.challengerTeam] -= clueVal;
+            addEventLog(`[⚠️ FULL PENALTY] ${gameState.challengerTeam.toUpperCase()} failed tactical challenge (-$${clueVal})!`);
+            finishClueRound('incorrect');
+          }
+        } else {
+          // Normal miss flow
+          if (answeringTeam === gameState.selectingTeam) {
+            gameState.turnSubmittingTeam = otherTeam;
+            gameState.phase = 'STEAL_THINKING';
+            gameState.timer = 20;
+            gameState.timerRunning = false; // Paused steal thinking
+            gameState.lockedSubmission = null;
+            gameState.liveDraft = { author: "", text: "" };
+            addEventLog(`[NORMAL STEAL] Opportunity shifts to ${otherTeam.toUpperCase()} (20s thinking, $0 miss).`);
+            syncState('incorrect');
+          } else {
+            addEventLog(`[STEAL FAILED] Neither team answered correctly. $0 awarded.`);
+            finishClueRound('incorrect');
+          }
+        }
+      }
+    };
+
+    function finishClueRound(sfxType = 'correct') {
+      if (gameState.activeClue) {
+        const key = `${gameState.activeClue.catIdx}-${gameState.activeClue.clueIdx}`;
+        if (!gameState.clearedClues.includes(key)) gameState.clearedClues.push(key);
+      }
+
+      document.getElementById('modalClueStage').classList.add('hidden');
+
+      // STRICT TURN ALTERNATION: Blue -> Red -> Blue -> Red...
+      gameState.selectingTeam = gameState.selectingTeam === 'blue' ? 'red' : 'blue';
+      gameState.selectionTimer = 20;
+      gameState.selectionTimerRunning = false; // Waiting for Host to start
+      gameState.phase = 'SELECTION';
+      gameState.activeClue = null;
+      gameState.lockedSubmission = null;
+      gameState.liveDraft = { author: "", text: "" };
+      gameState.isTacticalGambleUsed = false;
+      gameState.challengerTeam = null;
+
+      addEventLog(`[TURN SWITCH] Selection strictly passes to TEAM ${gameState.selectingTeam.toUpperCase()}.`);
+
+      if (gameState.clearedClues.length >= 30) {
+        setTimeout(triggerHostEndMatch, 1000);
+      }
+      syncState(sfxType);
+    }
+
+    /* -------------------------------------------------------------
+       HOST OVERRIDES & UTILITIES
+    -------------------------------------------------------------- */
+    window.triggerHostPause = function() {
+      if (myRole !== 'host') return;
+      gameState.isPaused = !gameState.isPaused;
+      window.sfxKeyClick();
+      addEventLog(`[SYSTEM] Match ${gameState.isPaused ? 'PAUSED' : 'RESUMED'} by Host.`);
+      syncState();
+    };
+
+    window.triggerHostVoidSubmission = function() {
+      if (myRole !== 'host') return;
+      window.showDosModal(
+        "CONFIRM VOID SUBMISSION",
+        "Erase current locked submission, refund the 15-second timer, and re-open typing input for the team?",
+        () => {
+          window.sfxKeyClick();
+          gameState.lockedSubmission = null;
+          gameState.liveDraft = { author: "", text: "" };
+          gameState.phase = 'TYPING';
+          gameState.timer = 15;
+          gameState.timerRunning = true;
+          addEventLog(`[HOST VETO] Submission voided. 15s refunded to ${gameState.turnSubmittingTeam.toUpperCase()}`);
+          syncState();
+        },
+        () => {}
+      );
+    };
+
+    window.triggerHostUndoClue = function() {
+      if (myRole !== 'host') return;
+      window.showDosModal(
+        "CONFIRM RE-OPEN CLUE",
+        "Re-open active clue into 60s Thinking phase?",
+        () => {
+          window.sfxKeyClick();
+          if (gameState.activeClue) {
+            gameState.phase = 'THINKING';
+            gameState.timer = 60;
+            gameState.timerRunning = false;
+            gameState.lockedSubmission = null;
+            gameState.isTacticalGambleUsed = false;
+            addEventLog("[UNDO] Host reverted clue back to 60s Thinking phase.");
+            syncState();
+          }
+        },
+        () => {}
+      );
+    };
+
+    window.hostAdjustQuickScore = function(team, delta) {
+      if (myRole !== 'host') return;
+      window.sfxKeyClick();
+      gameState.scores[team] += delta;
+      addEventLog(`[OVERRIDE] Adjusted ${team.toUpperCase()} score by ${delta >= 0 ? '+' : ''}${delta}`);
+      syncState();
+    };
+
+    window.hostApplyManualScore = function(team) {
+      if (myRole !== 'host') return;
+      const input = document.getElementById(team === 'blue' ? 'hostOverrideBlueInput' : 'hostOverrideRedInput');
+      const val = parseInt(input.value, 10) || 0;
+      window.sfxKeyClick();
+      gameState.scores[team] = val;
+      addEventLog(`[OVERRIDE] Host manually set ${team.toUpperCase()} balance to $${val}`);
+      syncState();
+    };
+
+    window.triggerHostResetMatch = function() {
+      if (myRole !== 'host') return;
+      window.showDosModal(
+        "CONFIRM MATCH RESET",
+        "Reset entire match, board, and scores back to zero?",
+        () => {
+          window.sfxKeyClick();
+          gameState = {
+            scores: { blue: 0, red: 0 },
+            selectingTeam: 'blue',
+            selectionTimer: 20,
+            selectionTimerRunning: false,
+            clearedClues: [],
+            phase: 'SELECTION',
+            activeClue: null,
+            pendingHostClue: null,
+            timer: 60,
+            timerRunning: false,
+            isPaused: false,
+            isTacticalGambleUsed: false,
+            challengerTeam: null,
+            turnSubmittingTeam: null,
+            liveDraft: { author: "", text: "" },
+            lockedSubmission: null,
+            lastSelectionAttribution: null,
+            tacticalAlert: null,
+            logs: ["[RESET] Match rebooted by Host. Board restored."],
+            roster: { blue: 0, red: 0 }
+          };
+          syncState();
+        },
+        () => {}
+      );
+    };
+
+    window.triggerHostEndMatch = function() {
+      window.sfxVictory();
+      gameState.phase = 'GAME_OVER';
+
+      const winner = gameState.scores.blue > gameState.scores.red
+        ? "TEAM BLUE"
+        : gameState.scores.red > gameState.scores.blue
+        ? "TEAM RED"
+        : "TIE (BOTH SQUADS)";
+
+      document.getElementById('victoryWinnerBanner').innerText = `CHAMPION: ${winner}`;
+      document.getElementById('victoryFinalScores').innerText = `FINAL ASSETS: BLUE: $${gameState.scores.blue}  │  RED: $${gameState.scores.red}`;
+      document.getElementById('modalVictory').classList.remove('hidden');
+      syncState('victory');
+    };
+
+    window.closeVictoryModal = function() {
+      document.getElementById('modalVictory').classList.add('hidden');
+    };
+
+    /* -------------------------------------------------------------
+       DECK BUILDER / JSON MANAGER
+    -------------------------------------------------------------- */
+    let activeDeckTab = 0;
+
+    window.openDeckModal = function() {
+      window.sfxKeyClick();
+      activeDeckTab = 0;
+      renderDeckEditor();
+      document.getElementById('modalDeckManager').classList.remove('hidden');
+    };
+
+    window.closeDeckModal = function() {
+      window.sfxKeyClick();
+      document.getElementById('modalDeckManager').classList.add('hidden');
+    };
+
+    function renderDeckEditor() {
+      const tabsBox = document.getElementById('deckCategoryTabs');
+      tabsBox.innerHTML = gameDeck.map((cat, i) => `
+        <button onclick="switchDeckTab(${i})" class="px-2 py-0.5 border text-xs font-bold ${activeDeckTab === i ? 'bg-yellow-300 text-black border-white' : 'bg-[#000060] text-cyan-300 border-cyan-400'}">
+          CAT 0${i + 1}: ${escapeHtml(cat.category)}
+        </button>
+      `).join('');
+
+      const cat = gameDeck[activeDeckTab];
+      const editorBox = document.getElementById('deckCluesEditor');
+
+      let html = `
+        <div class="bg-[#000060] p-2 border border-cyan-300 mb-2 flex items-center space-x-2">
+          <span class="text-yellow-300 font-bold">CATEGORY NAME:</span>
+          <input type="text" id="deckCatInput" value="${escapeHtml(cat.category)}" class="bg-black text-white border border-cyan-400 p-1 font-mono text-xs flex-1">
+        </div>
+      `;
+
+      cat.clues.forEach((clue, idx) => {
+        html += `
+          <div class="border border-cyan-400 p-2 bg-[#000078] space-y-1">
+            <div class="flex justify-between items-center text-yellow-300 font-bold">
+              <span>TILE $${clue.value}</span>
+              <div class="flex items-center space-x-2">
+                <span class="text-[10px] text-gray-300">TYPE:</span>
+                <select id="deckTypeSelect_${idx}" class="bg-black text-cyan-300 border border-cyan-400 p-0.5 text-xs">
+                  <option value="text" ${clue.type === 'text' ? 'selected' : ''}>TEXT</option>
+                  <option value="image" ${clue.type === 'image' ? 'selected' : ''}>IMAGE (PHOTO)</option>
+                  <option value="audio" ${clue.type === 'audio' ? 'selected' : ''}>AUDIO (URL/SYNTH)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <span class="text-gray-300">QUESTION PROMPT:</span>
+              <input type="text" id="deckQInput_${idx}" value="${escapeHtml(clue.q)}" class="bg-black text-white border border-cyan-400 p-1 w-full font-mono text-xs">
+            </div>
+            <div>
+              <span class="text-yellow-300">OFFICIAL SECRET ANSWER:</span>
+              <input type="text" id="deckAInput_${idx}" value="${escapeHtml(clue.a)}" class="bg-black text-yellow-300 border border-cyan-400 p-1 w-full font-mono text-xs">
+            </div>
+            <div>
+              <span class="text-gray-300">MEDIA URL (FOR IMAGE / AUDIO):</span>
+              <input type="text" id="deckMediaInput_${idx}" value="${escapeHtml(clue.mediaUrl || '')}" placeholder="https://image-url or audio url" class="bg-black text-cyan-200 border border-cyan-400 p-1 w-full font-mono text-xs">
+            </div>
+          </div>
+        `;
+      });
+
+      editorBox.innerHTML = html;
+    }
+
+    window.switchDeckTab = function(idx) {
+      saveActiveDeckTab();
+      activeDeckTab = idx;
+      renderDeckEditor();
+    };
+
+    function saveActiveDeckTab() {
+      const catInput = document.getElementById('deckCatInput');
+      if (!catInput) return;
+      gameDeck[activeDeckTab].category = catInput.value.trim() || `CAT 0${activeDeckTab + 1}`;
+
+      gameDeck[activeDeckTab].clues.forEach((clue, idx) => {
+        const qElem = document.getElementById(`deckQInput_${idx}`);
+        const aElem = document.getElementById(`deckAInput_${idx}`);
+        const typeElem = document.getElementById(`deckTypeSelect_${idx}`);
+        const mediaElem = document.getElementById(`deckMediaInput_${idx}`);
+
+        if (qElem) clue.q = qElem.value;
+        if (aElem) clue.a = aElem.value;
+        if (typeElem) clue.type = typeElem.value;
+        if (mediaElem) clue.mediaUrl = mediaElem.value;
+      });
+    }
+
+    window.saveAndApplyDeckChanges = function() {
+      saveActiveDeckTab();
+      localStorage.setItem('dos_jeopardy_deck', JSON.stringify(gameDeck));
+      window.sfxCorrect();
+      closeDeckModal();
+      addEventLog("[DECK] Clue deck updated and applied.");
+      renderAll();
+    };
+
+    window.exportDeckToJson = function() {
+      saveActiveDeckTab();
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(gameDeck, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute("href", dataStr);
+      a.setAttribute("download", "dos_jeopardy_deck.json");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.sfxKeyClick();
+    };
+
+    window.importDeckFromJson = function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (Array.isArray(parsed) && parsed.length === 6) {
+            gameDeck = parsed;
+            localStorage.setItem('dos_jeopardy_deck', JSON.stringify(gameDeck));
+            window.sfxCorrect();
+            renderDeckEditor();
+            renderAll();
+            addEventLog("[DECK] Custom JSON trivia deck loaded.");
+          } else {
+            window.sfxIncorrect();
+            window.showDosModal("DECK ERROR", "Invalid deck format. File must contain exactly 6 categories.");
+          }
+        } catch (err) {
+          window.sfxIncorrect();
+          window.showDosModal("PARSING ERROR", "Failed to parse JSON trivia file.");
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    window.restoreDefaultDeck = function() {
+      window.showDosModal(
+        "CONFIRM RESTORE",
+        "Restore factory default trivia questions and categories?",
+        () => {
+          gameDeck = JSON.parse(JSON.stringify(DEFAULT_DECK));
+          localStorage.setItem('dos_jeopardy_deck', JSON.stringify(gameDeck));
+          window.sfxCorrect();
+          renderDeckEditor();
+          renderAll();
+          addEventLog("[DECK] Factory default trivia deck restored.");
+        },
+        () => {}
+      );
+    };
+
+    /* -------------------------------------------------------------
+       KEYBOARD SHORTCUTS (F-KEYS & ENTER/ESC)
+    -------------------------------------------------------------- */
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'F1') { e.preventDefault(); openDeckModal(); }
+      if (e.key === 'F2') { e.preventDefault(); triggerHostPause(); }
+      if (e.key === 'F3') { e.preventDefault(); quickSwitchView('board'); }
+      if (e.key === 'F4') { e.preventDefault(); quickSwitchView('host'); }
+      if (e.key === 'F5') { e.preventDefault(); joinRole('blue'); }
+      if (e.key === 'F6') { e.preventDefault(); joinRole('red'); }
+      if (e.key === 'Escape') {
+        if (myRole === 'host' && gameState.phase === 'HOST_CONFIRM') {
+          hostConfirmClueExecution(false);
+        }
+        document.getElementById('modalDeckManager').classList.add('hidden');
+        document.getElementById('modalLobby').classList.add('hidden');
+        closeDosMessageModal();
+      }
+      if (e.key === 'Enter') {
+        if (myRole === 'host' && gameState.phase === 'HOST_CONFIRM') {
+          hostConfirmClueExecution(true);
+        }
+      }
+    });
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Initialize application
+    window.addEventListener('load', () => {
+      switchViewRole(myRole);
+      renderAll();
+      addEventLog("[READY] DOS Defrag Terminal Online.");
+    });
   </script>
 </body>
 </html>
