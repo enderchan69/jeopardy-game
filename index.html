@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
-  <!-- SOCKET.IO CLIENT FOR REAL-TIME INTERNET SYNC -->
+  <!-- SOCKET.IO CLIENT -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <style>
     :root {
@@ -238,6 +238,9 @@
     .roster-list li {
       padding: 3px 0;
       color: var(--dos-fg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .board-layout {
@@ -370,15 +373,14 @@
 </head>
 <body>
 
-  <!-- RETRO TOP SYSTEM RIBBON -->
+  <!-- RETRO TOP SYSTEM RIBBON (LOCKED DOWN: DECK EDITOR HIDDEN) -->
   <div class="top-ribbon">
     <div class="nav-items">
       <span onclick="app.switchView('view-lobby')">F1: MAIN MENU</span>
       <span onclick="app.requestHostAccess()">F2: HOST PANEL</span>
       <span onclick="app.switchView('view-board')">F3: BOARD VIEW</span>
-      <span onclick="app.switchView('view-editor')">F4: DECK EDITOR</span>
     </div>
-    <div id="ribbon-status">SYS: READY // CLOUD-RELAY CONNECTED</div>
+    <div id="ribbon-status">SYS: ONLINE // CLOUD-RELAY ACTIVE</div>
   </div>
 
   <!-- TACTICAL ALERT BANNER -->
@@ -441,7 +443,7 @@
       </div>
       
       <div style="font-size: 13px; color: var(--dos-gray); margin-bottom: 15px;">
-        ESTABLISHING CLOUD CONNECTIONS. VERIFYING SQUADRON ROSTERS.
+        ESTABLISHING CLOUD CONNECTIONS. SQUADRON ROSTERS VERIFIED.
       </div>
 
       <div class="roster-grid">
@@ -635,7 +637,7 @@
     </div>
   </div>
 
-  <!-- 6. DECK EDITOR VIEW -->
+  <!-- 6. DECK EDITOR VIEW (HOST EXCLUSIVE) -->
   <div id="view-editor" class="view-container">
     <div class="dos-box controller-container" style="max-width: 800px; padding: 16px;">
       <div class="dos-box-title">─ FAT TABLE DECK EDITOR ─</div>
@@ -771,9 +773,7 @@
 
     class JeopardyApp {
       constructor() {
-        // SOCKET.IO FOR CLOUD MULTIPLAYER
         this.socket = (typeof io !== "undefined") ? io() : null;
-
         this.deck = JSON.parse(localStorage.getItem("msdos_deck")) || defaultDeck;
         this.hostPIN = "1337";
         this.failedPINAttempts = parseInt(localStorage.getItem("failed_pin_count") || "0");
@@ -805,23 +805,9 @@
       init() {
         this.bindEvents();
         this.setupSocket();
-        this.checkExistingSession();
         this.renderBoardGrid();
         this.renderEditor();
-        this.log("MS-DOS JEOPARDY ONLINE RELAY READY.");
-      }
-
-      checkExistingSession() {
-        const savedName = localStorage.getItem("jeopardy_name");
-        if (savedName) {
-          this.username = savedName;
-          document.getElementById("input-username").value = savedName;
-        }
-        const savedRole = localStorage.getItem("jeopardy_role");
-        if (savedRole) {
-          this.role = savedRole;
-          this.updateRosterLocal();
-        }
+        this.log("MS-DOS JEOPARDY CLIENT READY.");
       }
 
       log(msg) {
@@ -834,6 +820,11 @@
       }
 
       switchView(viewId) {
+        // Enforce Host-only access for Deck Editor
+        if (viewId === 'view-editor' && this.role !== 'host') {
+          alert("SECURITY: ACCESS RESTRICTED TO VERIFIED HOST OPERATOR.");
+          return;
+        }
         document.querySelectorAll(".view-container").forEach(el => el.classList.remove("active"));
         const target = document.getElementById(viewId);
         if (target) target.classList.add("active");
@@ -862,7 +853,6 @@
 
         if (!this.state.gameStarted) {
           this.switchView("view-staging");
-          this.updateStagingView();
         } else {
           if (role === "blue" || role === "red") this.switchView("view-player");
           else this.switchView("view-board");
@@ -910,7 +900,6 @@
 
           if (!this.state.gameStarted) {
             this.switchView("view-staging");
-            this.updateStagingView();
           } else {
             this.switchView("view-host");
           }
@@ -931,33 +920,56 @@
         }
       }
 
+      kickPlayer(targetUser, role) {
+        if (this.role !== "host") return;
+        this.broadcast({
+          type: "KICK_PLAYER",
+          targetUser: targetUser,
+          role: role
+        });
+        this.log(`HOST KICKED OPERATOR: ${targetUser}`);
+      }
+
       launchGameFromStaging() {
         if (this.role !== "host") return;
-        this.state.gameStarted = true;
-        this.state.phase = "SELECTING";
-        this.state.timerRemaining = 20;
-        this.state.timerTotal = 20;
-
         this.broadcast({
-          type: "LAUNCH_MATCH",
-          state: this.state
+          type: "LAUNCH_MATCH"
         });
-
-        this.switchView("view-host");
-        this.startLocalTimer(20, () => this.handleSelectionTimeout());
-        sound.playCorrect();
-        this.log("MATCH COMMENCED BY HOST OPERATOR.");
       }
 
       setupSocket() {
         if (!this.socket) return;
+
+        this.socket.on("connect", () => {
+          const savedName = localStorage.getItem("jeopardy_name");
+          const savedRole = localStorage.getItem("jeopardy_role");
+          if (savedName && savedRole) {
+            this.username = savedName;
+            this.role = savedRole;
+            document.getElementById("input-username").value = savedName;
+            this.broadcast({
+              type: "ROSTER_JOIN",
+              user: this.username,
+              role: this.role
+            });
+          }
+        });
+
         this.socket.on("game_message", (msg) => {
           switch (msg.type) {
-            case "ROSTER_JOIN": this.handleRosterJoin(msg); break;
-            case "LAUNCH_MATCH": this.state = msg.state; this.handleMatchLaunched(); break;
-            case "STATE_UPDATE": this.applyRemoteState(msg.state); break;
-            case "LIVE_TYPING": this.handleLiveTyping(msg); break;
-            case "CHALLENGE_TRIGGERED": this.showTacticalAlert(msg.team, msg.player); break;
+            case "STATE_UPDATE":
+              this.applyRemoteState(msg.state);
+              break;
+            case "LAUNCH_MATCH":
+              this.state = msg.state;
+              this.handleMatchLaunched();
+              break;
+            case "LIVE_TYPING":
+              this.handleLiveTyping(msg);
+              break;
+            case "CHALLENGE_TRIGGERED":
+              this.showTacticalAlert(msg.team, msg.player);
+              break;
           }
         });
       }
@@ -968,25 +980,18 @@
         }
       }
 
-      handleRosterJoin(msg) {
-        if (!this.state.roster[msg.role]) return;
-        if (msg.role === 'host') {
-          this.state.roster.host = msg.user;
-        } else {
-          if (!this.state.roster[msg.role].includes(msg.user)) {
-            this.state.roster[msg.role].push(msg.user);
-          }
-        }
-        this.updateStagingView();
-      }
+      applyRemoteState(newState) {
+        const wasStarted = this.state.gameStarted;
+        this.state = newState;
 
-      updateRosterLocal() {
-        if (this.role === 'host') {
-          this.state.roster.host = this.username;
-        } else if (this.role && this.state.roster[this.role]) {
-          if (!this.state.roster[this.role].includes(this.username)) {
-            this.state.roster[this.role].push(this.username);
-          }
+        this.updateStagingView();
+        this.updateBoardUI();
+        this.updatePlayerUI();
+        this.updateHostUI();
+
+        // If game has started and user is still in staging/lobby, auto-transition them
+        if (this.state.gameStarted && !wasStarted) {
+          this.handleMatchLaunched();
         }
       }
 
@@ -994,13 +999,35 @@
         document.getElementById("staging-host-name").textContent = this.state.roster.host ? `${this.state.roster.host} [VERIFIED]` : "UNASSIGNED";
         document.getElementById("staging-spectator-count").textContent = this.state.roster.spectators ? this.state.roster.spectators.length : "0";
 
+        const isHost = this.role === "host";
+
+        // Team Blue List with Kick Buttons for Host
         const blueList = document.getElementById("staging-roster-blue");
-        blueList.innerHTML = this.state.roster.blue.length === 0 ? "<li>(No operators connected)</li>" : this.state.roster.blue.map(u => `<li>► ${u}</li>`).join("");
+        if (this.state.roster.blue.length === 0) {
+          blueList.innerHTML = "<li>(No operators connected)</li>";
+        } else {
+          blueList.innerHTML = this.state.roster.blue.map(u => `
+            <li>
+              <span>► ${u}</span>
+              ${isHost ? `<button class="dos-btn dos-btn-red" style="padding: 1px 6px; font-size: 10px;" onclick="app.kickPlayer('${u}', 'blue')">✕ KICK</button>` : ''}
+            </li>
+          `).join("");
+        }
 
+        // Team Red List with Kick Buttons for Host
         const redList = document.getElementById("staging-roster-red");
-        redList.innerHTML = this.state.roster.red.length === 0 ? "<li>(No operators connected)</li>" : this.state.roster.red.map(u => `<li>► ${u}</li>`).join("");
+        if (this.state.roster.red.length === 0) {
+          redList.innerHTML = "<li>(No operators connected)</li>";
+        } else {
+          redList.innerHTML = this.state.roster.red.map(u => `
+            <li>
+              <span>► ${u}</span>
+              ${isHost ? `<button class="dos-btn dos-btn-red" style="padding: 1px 6px; font-size: 10px;" onclick="app.kickPlayer('${u}', 'red')">✕ KICK</button>` : ''}
+            </li>
+          `).join("");
+        }
 
-        if (this.role === "host") {
+        if (isHost) {
           document.getElementById("staging-host-controls").style.display = "block";
           document.getElementById("staging-player-msg").style.display = "none";
         } else {
@@ -1011,14 +1038,16 @@
 
       handleMatchLaunched() {
         this.updateBoardUI();
-        if (this.role === "host") this.switchView("view-host");
-        else if (this.role === "blue" || this.role === "red") {
+        if (this.role === "host") {
+          this.switchView("view-host");
+          this.startLocalTimer(20, () => this.handleSelectionTimeout());
+        } else if (this.role === "blue" || this.role === "red") {
           this.switchView("view-player");
           this.updatePlayerUI();
         } else {
           this.switchView("view-board");
         }
-        this.log("GAME LAUNCH DETECTED.");
+        this.log("GAME COMMENCED. LIVE CLUSTERS ACTIVATED.");
       }
 
       renderBoardGrid() {
@@ -1398,13 +1427,6 @@
           type: "STATE_UPDATE",
           state: this.state
         });
-        this.updateBoardUI();
-        this.updatePlayerUI();
-        this.updateHostUI();
-      }
-
-      applyRemoteState(newState) {
-        this.state = newState;
         this.updateBoardUI();
         this.updatePlayerUI();
         this.updateHostUI();
