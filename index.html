@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
-  <!-- SOCKET.IO CLIENT FOR RENDER MULTIPLAYER -->
+  <!-- SOCKET.IO CLIENT -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   
   <style>
@@ -175,11 +175,13 @@
       <span class="hidden md:inline text-black">SECTORS: <span id="headerTilesLeft" class="text-blue-900">30/30</span></span>
     </div>
 
-    <!-- Active View Switcher / Session Badge -->
+    <!-- Active View Switcher / Session Badge / Host & Spectator Readouts -->
     <div class="flex items-center space-x-2 sm:space-x-3 text-xs">
+      <span class="bg-black text-yellow-300 px-2 py-0.5 border border-yellow-400 font-mono">HOST: <span id="headerHostName">None</span></span>
+      <span class="bg-black text-green-300 px-2 py-0.5 border border-green-400 font-mono">SPECS: <span id="headerSpectatorCount">0</span></span>
       <span id="playerRolePill" class="hidden sm:inline bg-black text-cyan-300 px-2 py-0.5 border border-cyan-400 font-mono">ROLE: UNASSIGNED</span>
       <button onclick="openLobbyModal()" class="bg-[#000080] text-white px-2 py-0.5 border border-black hover:bg-black hover:text-cyan-300 font-mono">[ 🔄 SWITCH ROLE ]</button>
-      <button onclick="resetClientSession()" class="bg-[#780000] text-white px-2 py-0.5 border border-black hover:bg-red-600 font-mono" title="Clear saved logins and test cache">[ 🔄 RESET CACHE ]</button>
+      <button onclick="resetClientSession()" class="bg-[#780000] text-white px-2 py-0.5 border border-black hover:bg-red-600 font-mono">[ 🔄 RESET CACHE ]</button>
       <span id="dosClock" class="text-black font-mono font-bold">12:00:00</span>
     </div>
   </header>
@@ -211,7 +213,7 @@
       <!-- TOP SCORE & MATCH TELEMETRY (NORTON PROGRESS/DISK INFO STYLE) -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
         
-        <!-- TEAM BLUE TERMINAL -->
+        <!-- TEAM BLUE TERMINAL WITH LIVE ROSTER -->
         <div id="hudBlueBox" class="dos-box p-2 transition-colors border-cyan-400">
           <div class="flex justify-between items-center border-b border-cyan-400 pb-1 mb-1">
             <span class="text-cyan-300 font-bold tracking-widest text-xs sm:text-sm">┌─ TEAM BLUE [SECTOR 01] ─┐</span>
@@ -227,6 +229,10 @@
               <div class="text-[10px] text-gray-400">STRICT ALTERNATION</div>
             </div>
           </div>
+          <!-- Live Team Blue Roster -->
+          <div class="text-[11px] text-cyan-200 mt-1 border-t border-cyan-800 pt-1 font-mono truncate">
+            PLAYERS: <span id="boardBlueRoster" class="text-white font-bold">(None connected)</span>
+          </div>
         </div>
 
         <!-- CENTER STAKES & CLOCK TELEMETRY -->
@@ -236,7 +242,7 @@
           <div id="boardPhaseDesc" class="text-xs text-cyan-300 tracking-wider">TEAM BLUE CHOOSING A CLUSTER...</div>
         </div>
 
-        <!-- TEAM RED TERMINAL -->
+        <!-- TEAM RED TERMINAL WITH LIVE ROSTER -->
         <div id="hudRedBox" class="dos-box p-2 transition-colors border-red-400">
           <div class="flex justify-between items-center border-b border-red-400 pb-1 mb-1">
             <span class="text-red-400 font-bold tracking-widest text-xs sm:text-sm">┌─ TEAM RED [SECTOR 02] ─┐</span>
@@ -252,6 +258,10 @@
               <div class="text-[10px] text-gray-400">DEFENDING TACTICAL</div>
             </div>
           </div>
+          <!-- Live Team Red Roster -->
+          <div class="text-[11px] text-red-200 mt-1 border-t border-red-800 pt-1 font-mono truncate">
+            PLAYERS: <span id="boardRedRoster" class="text-white font-bold">(None connected)</span>
+          </div>
         </div>
       </div>
 
@@ -263,14 +273,10 @@
         </div>
 
         <!-- 6 Column Headers -->
-        <div id="boardCategoryHeaders" class="grid grid-cols-6 gap-1 sm:gap-2 mb-1 text-center font-bold text-xs sm:text-sm">
-          <!-- Populated by JS -->
-        </div>
+        <div id="boardCategoryHeaders" class="grid grid-cols-6 gap-1 sm:gap-2 mb-1 text-center font-bold text-xs sm:text-sm"></div>
 
         <!-- 5 Rows of Tiles ($200 to $1000) -->
-        <div id="boardTilesGrid" class="grid grid-cols-6 gap-1 sm:gap-2 flex-1 font-mono text-center">
-          <!-- Populated by JS -->
-        </div>
+        <div id="boardTilesGrid" class="grid grid-cols-6 gap-1 sm:gap-2 flex-1 font-mono text-center"></div>
       </div>
 
       <!-- ======================================================== -->
@@ -299,7 +305,6 @@
             [ ↵ SUBMIT ANSWER ]
           </button>
 
-          <!-- Quick Action Buttons -->
           <button onclick="playerTriggerSkipThinking()" id="btnPersistentSkip" class="dos-btn dos-btn-yellow py-2 px-3 text-xs font-bold whitespace-nowrap hidden">
             [ ⏩ READY TO ANSWER ]
           </button>
@@ -321,7 +326,7 @@
           <div class="flex justify-between"><span>LAST SELECTION:</span> <span id="telemetryLastPick" class="text-cyan-200 truncate">None</span></div>
         </div>
 
-        <!-- RETRO SEGMENTED MEDIA / HOST QUICK TIMER METER -->
+        <!-- RETRO SEGMENTED MEDIA BUFFER METER -->
         <div class="dos-box p-2 bg-[#000078] flex flex-col justify-between">
           <div class="flex justify-between text-yellow-300 font-bold border-b border-cyan-400 pb-0.5">
             <span id="centerMeterTitle">─ MEDIA BUFFER METER ─</span>
@@ -330,17 +335,7 @@
           <div id="segmentedAsciiBar" class="text-sm font-mono tracking-widest text-cyan-300 my-1 truncate">
             [░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░]
           </div>
-          
-          <!-- Host Manual Controls (Rendered when viewing as Host) -->
-          <div id="hostQuickBarControls" class="hidden flex flex-wrap gap-1 mt-1">
-            <button onclick="hostStartSelectionTimer()" class="dos-btn dos-btn-green px-1.5 py-0.5 text-[10px]">[ ▶ START PICK (20s) ]</button>
-            <button onclick="hostStartThinkingTimer()" class="dos-btn dos-btn-green px-1.5 py-0.5 text-[10px]">[ ▶ START THINK (60s) ]</button>
-            <button onclick="triggerHostPause()" class="dos-btn dos-btn-yellow px-1.5 py-0.5 text-[10px]">[ ⏸ PAUSE ]</button>
-            <button onclick="hostAddSeconds(10)" class="dos-btn px-1.5 py-0.5 text-[10px]">[ +10s ]</button>
-            <button onclick="hostForfeitSelection()" class="dos-btn dos-btn-red px-1.5 py-0.5 text-[10px]">[ PASS TURN ]</button>
-          </div>
-
-          <div class="flex justify-between text-[11px] text-gray-300" id="mediaStatusSubRow">
+          <div class="flex justify-between text-[11px] text-gray-300">
             <span id="mediaStatusSub">IDLE - READY</span>
             <span id="mediaTimeSub">00:00 / 00:00</span>
           </div>
@@ -357,90 +352,45 @@
     </div>
 
     <!-- ======================================================== -->
-    <!-- VIEW B: HOST CONTROL COMMAND CONSOLE (PIN PROTECTED)      -->
+    <!-- VIEW B: SIMPLIFIED DYNAMIC HOST CONTROL PANEL (PIN: 1337) -->
     <!-- ======================================================== -->
     <div id="viewHost" class="hidden flex-col gap-3 flex-1">
       
-      <!-- EMERGENCY HOST BAR -->
-      <div class="dos-box p-2.5 bg-[#000070] flex flex-wrap justify-between items-center gap-2 border-yellow-300">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-yellow-300 font-bold text-xs sm:text-sm">HOST CONTROLS:</span>
-          <button onclick="hostStartSelectionTimer()" class="dos-btn dos-btn-green text-xs px-2.5 py-1 font-bold">[ ▶ START PICK (20s) ]</button>
-          <button onclick="hostStartThinkingTimer()" class="dos-btn dos-btn-green text-xs px-2.5 py-1 font-bold">[ ▶ START THINK (60s) ]</button>
-          <button onclick="triggerHostPause()" id="hostPauseBtn" class="dos-btn dos-btn-yellow text-xs px-3 py-1 font-bold">[ ⏸ PAUSE CLOCK ]</button>
-          <button onclick="hostAddSeconds(10)" class="dos-btn text-xs px-2 py-1 font-bold">[ +10s TIME ]</button>
-          <button onclick="triggerHostVoidSubmission()" class="dos-btn dos-btn-red text-xs px-3 py-1 font-bold">[ ↩ VOID SUBMISSION ]</button>
-          <button onclick="triggerHostUndoClue()" class="dos-btn text-xs px-2.5 py-1">[ 🔄 RE-OPEN CLUE ]</button>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button onclick="triggerHostEndMatch()" class="dos-btn dos-btn-yellow text-xs px-3 py-1">[ 🏆 END MATCH ]</button>
-          <button onclick="triggerHostResetMatch()" class="dos-btn text-xs px-2 py-1 text-red-300">[ RESET MATCH ]</button>
-        </div>
-      </div>
-
-      <!-- ACTIVE CLUE & VERDICT VERIFICATION STATION -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        
-        <!-- CLUE & OFFICIAL ANSWER (ZERO-LEAK STATION) -->
-        <div class="dos-box p-3 border-cyan-400">
-          <div class="text-yellow-300 font-bold text-xs sm:text-sm border-b border-cyan-400 pb-1 mb-2 flex justify-between">
-            <span>─ ACTIVE CLUE TELEMETRY ─</span>
-            <span id="hostCluePill" class="text-white font-mono">NO ACTIVE CLUE</span>
-          </div>
-          
-          <div class="text-xs text-gray-300 mb-1">BROADCAST PROMPT (SEEN BY PLAYERS):</div>
-          <div id="hostCluePrompt" class="p-2.5 bg-[#000050] border border-cyan-300 text-xs sm:text-sm font-mono text-cyan-100 min-h-[75px] mb-2 leading-relaxed">
-            Waiting for tile selection...
-          </div>
-
-          <div class="text-xs text-yellow-300 font-bold mb-1 flex items-center justify-between">
-            <span>OFFICIAL CONFIDENTIAL ANSWER (ZERO-LEAK PROTECTED):</span>
-            <span class="text-[10px] text-red-400">HOST ONLY</span>
-          </div>
-          <div id="hostSecretAnswer" class="p-2.5 bg-[#000038] border-2 border-yellow-400 text-sm font-bold text-yellow-300 font-mono">
-            [ WAITING ]
-          </div>
+      <!-- DYNAMIC HOST COMMAND CONSOLE (CHANGES PER PHASE) -->
+      <div class="dos-box p-3 bg-[#000060] border-yellow-300">
+        <div class="text-yellow-300 font-bold text-sm border-b border-yellow-400 pb-1 mb-2 flex justify-between items-center">
+          <span>─ ACTIVE MATCH COMMAND DESK ─</span>
+          <span id="hostPhaseTitleBadge" class="bg-yellow-400 text-black px-2 py-0.5 text-xs font-mono font-bold uppercase">PHASE: SELECTION</span>
         </div>
 
-        <!-- SUBMITTED ANSWER & JUDGING BUTTONS -->
-        <div class="dos-box p-3 flex flex-col justify-between border-cyan-400">
-          <div>
-            <div class="text-yellow-300 font-bold text-xs sm:text-sm border-b border-cyan-400 pb-1 mb-2 flex justify-between">
-              <span>─ SUBMISSION VERIFICATION ─</span>
-              <span id="hostSubmittingPlayerPill" class="text-cyan-300 font-mono">WAITING</span>
-            </div>
-            
-            <div class="text-xs text-gray-300 mb-1">TEAM'S LOCKED IN ANSWER:</div>
-            <div id="hostAnswerDisplayBox" class="p-2.5 bg-black border-2 border-white text-base sm:text-lg font-bold text-white font-mono min-h-[65px] flex items-center justify-between">
-              <span id="hostAnswerString">[ NO SUBMISSION YET ]</span>
-              <span id="hostAnswerStatusTag" class="text-xs px-2 py-0.5 bg-gray-800 text-gray-400 font-bold">IDLE</span>
-            </div>
-          </div>
+        <!-- Dynamic Phase Action Container -->
+        <div id="hostDynamicActionBox" class="p-3 bg-black border border-cyan-400 mb-3">
+          <!-- Dynamically populated by JS according to phase -->
+        </div>
 
-          <!-- VERDICT ACTIONS -->
-          <div class="mt-4 pt-2 border-t border-cyan-400 flex flex-col gap-2">
-            <div class="text-xs text-center text-cyan-200">OFFICIAL VERDICT (MANUAL HOST JUDGMENT):</div>
-            <div class="grid grid-cols-2 gap-2">
-              <button onclick="hostAwardVerdict(true)" id="btnHostCorrect" disabled class="dos-btn dos-btn-green py-2.5 text-sm font-bold">
-                [ ✅ CORRECT (+$$) ]
-              </button>
-              <button onclick="hostAwardVerdict(false)" id="btnHostIncorrect" disabled class="dos-btn dos-btn-red py-2.5 text-sm font-bold">
-                [ ❌ INCORRECT ]
-              </button>
-            </div>
+        <!-- Official Answer & Submission Preview Box -->
+        <div id="hostAnswerTelemetryBox" class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono border-t border-cyan-800 pt-2">
+          <div class="p-2 bg-[#000040] border border-cyan-500">
+            <div class="text-yellow-300 font-bold mb-1">CONFIDENTIAL OFFICIAL ANSWER (HOST ONLY):</div>
+            <div id="hostSecretAnswerPreview" class="text-sm font-bold text-white">[ NO ACTIVE CLUE ]</div>
+          </div>
+          <div class="p-2 bg-[#000040] border border-cyan-500">
+            <div class="text-cyan-300 font-bold mb-1">PLAYER SUBMISSION:</div>
+            <div id="hostSubmittedAnswerPreview" class="text-sm font-bold text-yellow-300">[ WAITING FOR INPUT ]</div>
           </div>
         </div>
       </div>
 
-      <!-- PERSISTENT LIVE SCORE OVERRIDE PANEL -->
-      <div class="dos-box p-3 bg-[#000078] border-yellow-300">
-        <div class="text-yellow-300 font-bold text-xs sm:text-sm border-b border-cyan-400 pb-1 mb-2">
-          ─ LIVE SCORE OVERRIDE CONSOLE (ANTI-MISCLICK & ADJUSTMENTS) ─
+      <!-- PERMANENT HOST UTILITIES & SCORE OVERRIDE -->
+      <div class="dos-box p-3 bg-[#000078] border-cyan-400">
+        <div class="text-yellow-300 font-bold text-xs border-b border-cyan-400 pb-1 mb-2 flex justify-between">
+          <span>─ PERMANENT MATCH OVERRIDES & CONTROLS ─</span>
+          <span class="text-gray-300 text-[11px]">MANUAL OVERRIDE DESK</span>
         </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-          <!-- BLUE OVERRIDES -->
-          <div class="border border-cyan-400 p-2.5 bg-[#000060]">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs mb-3">
+          <!-- Blue Adjustments -->
+          <div class="border border-cyan-400 p-2 bg-[#000050]">
             <div class="text-cyan-300 font-bold mb-1">TEAM BLUE BALANCE</div>
             <div class="flex items-center space-x-2 mb-2">
               <span>SCORE:</span>
@@ -452,13 +402,11 @@
               <button onclick="hostAdjustQuickScore('blue', -200)" class="dos-btn px-2 py-0.5">-200</button>
               <button onclick="hostAdjustQuickScore('blue', 400)" class="dos-btn px-2 py-0.5">+400</button>
               <button onclick="hostAdjustQuickScore('blue', -400)" class="dos-btn px-2 py-0.5">-400</button>
-              <button onclick="hostAdjustQuickScore('blue', 600)" class="dos-btn px-2 py-0.5">+600</button>
-              <button onclick="hostAdjustQuickScore('blue', -600)" class="dos-btn px-2 py-0.5">-600</button>
             </div>
           </div>
 
-          <!-- RED OVERRIDES -->
-          <div class="border border-red-400 p-2.5 bg-[#000060]">
+          <!-- Red Adjustments -->
+          <div class="border border-red-400 p-2 bg-[#000050]">
             <div class="text-red-400 font-bold mb-1">TEAM RED BALANCE</div>
             <div class="flex items-center space-x-2 mb-2">
               <span>SCORE:</span>
@@ -470,9 +418,20 @@
               <button onclick="hostAdjustQuickScore('red', -200)" class="dos-btn px-2 py-0.5">-200</button>
               <button onclick="hostAdjustQuickScore('red', 400)" class="dos-btn px-2 py-0.5">+400</button>
               <button onclick="hostAdjustQuickScore('red', -400)" class="dos-btn px-2 py-0.5">-400</button>
-              <button onclick="hostAdjustQuickScore('red', 600)" class="dos-btn px-2 py-0.5">+600</button>
-              <button onclick="hostAdjustQuickScore('red', -600)" class="dos-btn px-2 py-0.5">-600</button>
             </div>
+          </div>
+        </div>
+
+        <!-- Master Match Controls -->
+        <div class="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-cyan-800 text-xs">
+          <div class="flex items-center space-x-2">
+            <button onclick="triggerHostPause()" id="hostPauseBtn" class="dos-btn dos-btn-yellow px-3 py-1 font-bold">[ ⏸ PAUSE CLOCK ]</button>
+            <button onclick="triggerHostVoidSubmission()" class="dos-btn dos-btn-red px-3 py-1 font-bold">[ ↩ VOID SUBMISSION ]</button>
+            <button onclick="triggerHostUndoClue()" class="dos-btn px-2.5 py-1">[ 🔄 RE-OPEN CLUE ]</button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="triggerHostEndMatch()" class="dos-btn dos-btn-yellow px-3 py-1">[ 🏆 END MATCH ]</button>
+            <button onclick="triggerHostResetMatch()" class="dos-btn text-red-300 px-3 py-1">[ ⚠️ RESET MATCH ]</button>
           </div>
         </div>
       </div>
@@ -483,7 +442,7 @@
   <!-- 3. RETRO MODALS & OVERLAYS                               -->
   <!-- ======================================================== -->
 
-  <!-- MODAL 1: 5-SECOND TACTICAL CHALLENGE POPUP BANNER (GLOBAL ROUTING) -->
+  <!-- MODAL 1: 5-SECOND TACTICAL CHALLENGE POPUP BANNER -->
   <div id="modalTacticalBanner" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 hidden">
     <div class="dos-box-red max-w-xl w-full p-4 sm:p-6 bg-[#320008] text-center shadow-2xl animate-pulse">
       <div class="text-red-400 font-mono text-sm sm:text-base font-bold mb-2">
@@ -503,7 +462,7 @@
     </div>
   </div>
 
-  <!-- MODAL 2: HOST ANTI-MISCLICK CONFIRMATION DIALOG (STATE ROUTED) -->
+  <!-- MODAL 2: HOST ANTI-MISCLICK CONFIRMATION DIALOG -->
   <div id="modalHostConfirm" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 hidden">
     <div class="dos-box-yellow max-w-md w-full p-4 bg-[#0000A8]">
       <div class="text-yellow-300 font-bold text-center border-b-2 border-yellow-400 pb-1 text-sm sm:text-base mb-3">
@@ -518,6 +477,8 @@
           Broadcast this cluster to all player terminals?
         </div>
       </div>
+      
+      <!-- Host buttons vs Non-host waiting message -->
       <div class="grid grid-cols-2 gap-3" id="confirmModalHostButtons">
         <button onclick="hostConfirmClueExecution(true)" class="dos-btn dos-btn-green py-2 text-xs sm:text-sm font-bold">
           [ ENTER: REVEAL ]
@@ -532,7 +493,7 @@
     </div>
   </div>
 
-  <!-- MODAL 3: CLUE STAGE OVERLAY (FOR BOARD / STREAM VIEW) -->
+  <!-- MODAL 3: CLUE STAGE OVERLAY -->
   <div id="modalClueStage" class="fixed inset-0 bg-black/90 flex items-center justify-center p-2 sm:p-5 z-40 hidden">
     <div class="dos-box max-w-4xl w-full p-4 sm:p-5 bg-[#0000A8] flex flex-col justify-between max-h-[95vh] overflow-y-auto">
       
@@ -607,24 +568,12 @@
         </div>
       </div>
 
-      <!-- STAGE FOOTER & HOST CONTROLS -->
+      <!-- STAGE FOOTER -->
       <div class="border-t border-cyan-400 pt-2 flex flex-wrap justify-between items-center text-xs text-gray-300 gap-2">
         <div>ACTIVE SQUAD: <span id="stageActiveSquad" class="text-yellow-300 font-bold uppercase">TEAM BLUE</span></div>
         <div id="stageTacticalWarning" class="text-red-400 font-bold"></div>
-        
-        <!-- Host Quick Controls inside Clue Window -->
-        <div id="stageHostActions" class="hidden flex gap-1">
-          <button onclick="hostStartThinkingTimer()" class="dos-btn dos-btn-green px-2 py-0.5 text-xs">[ ▶ START 60s ]</button>
-          <button onclick="hostProceedToTyping()" class="dos-btn dos-btn-yellow px-2 py-0.5 text-xs">[ ⚡ FORCE 15s TYPING ]</button>
-          <button onclick="triggerHostPause()" class="dos-btn px-2 py-0.5 text-xs">[ ⏸ PAUSE ]</button>
-          <button onclick="hostAddSeconds(10)" class="dos-btn px-2 py-0.5 text-xs">[ +10s ]</button>
-          <button onclick="hostAwardVerdict(true)" class="dos-btn dos-btn-green px-2 py-0.5 text-xs">[ ✅ CORRECT ]</button>
-          <button onclick="hostAwardVerdict(false)" class="dos-btn dos-btn-red px-2 py-0.5 text-xs">[ ❌ MISS ]</button>
-        </div>
-
         <div class="text-cyan-300">MS-DOS JEOPARDY v4.0</div>
       </div>
-
     </div>
   </div>
 
@@ -637,8 +586,8 @@
 
       <div class="space-y-3 font-mono text-xs">
         <div>
-          <span class="text-gray-200">YOUR HANDLE / DISPLAY NAME:</span>
-          <input type="text" id="lobbyPlayerNameInput" value="Player_1" class="bg-black text-cyan-300 border-2 border-cyan-400 p-2 font-mono text-sm w-full mt-1 focus:outline-none">
+          <span class="text-gray-200">YOUR CALLSIGN / NAME:</span>
+          <input type="text" id="lobbyPlayerNameInput" value="Operator_1" class="bg-black text-cyan-300 border-2 border-cyan-400 p-2 font-mono text-sm w-full mt-1 focus:outline-none">
         </div>
 
         <div class="text-gray-300 pt-1">CHOOSE TERMINAL ASSIGNMENT:</div>
@@ -646,12 +595,12 @@
         <div class="grid grid-cols-1 gap-2">
           <button onclick="joinRole('blue')" class="dos-btn py-2 text-cyan-300 border-cyan-400 font-bold flex justify-between px-3">
             <span>[ 🔵 JOIN TEAM BLUE ]</span>
-            <span class="text-gray-400 text-[10px]">CYAN SQUADRON</span>
+            <span id="lobbyBlueCount" class="text-gray-400 text-[10px]">CYAN SQUADRON</span>
           </button>
           
           <button onclick="joinRole('red')" class="dos-btn py-2 text-red-400 border-red-400 font-bold flex justify-between px-3">
             <span>[ 🔴 JOIN TEAM RED ]</span>
-            <span class="text-gray-400 text-[10px]">CRIMSON SQUADRON</span>
+            <span id="lobbyRedCount" class="text-gray-400 text-[10px]">CRIMSON SQUADRON</span>
           </button>
 
           <button onclick="joinRole('board')" class="dos-btn dos-btn-yellow py-2 font-bold">
@@ -670,13 +619,13 @@
         </div>
 
         <div class="text-[10px] text-gray-400 border-t border-gray-700 pt-2">
-          Note: You can switch teams anytime using the top ribbon.
+          Note: You can switch between teams freely anytime.
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 5: "NAH UH" BRUTE FORCE LOCKOUT DIALOG -->
+  <!-- MODAL 5: BRUTE FORCE LOCKOUT DIALOG -->
   <div id="modalNahUhLockout" class="fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-50 hidden">
     <div class="dos-box-red max-w-md w-full p-5 bg-[#000078] text-center font-mono">
       <div class="text-red-400 font-bold border-b-2 border-red-500 pb-1 text-sm mb-3">
@@ -687,7 +636,6 @@
       </div>
       <div class="p-3 bg-black border border-red-400 text-xs text-red-300 mb-3 leading-relaxed">
         TERMINAL LOCKED FOR 15 MINUTES.<br>
-        EXCESSIVE UNAUTHORIZED HOST PIN ATTEMPTS DETECTED.<br>
         TRY AGAIN AT: <span id="nahUhUnlockTime" class="text-white font-bold font-mono">12:15:00</span>
       </div>
       <button onclick="closeNahUhModal()" class="dos-btn px-4 py-1.5 text-xs">
@@ -696,31 +644,24 @@
     </div>
   </div>
 
-  <!-- MODAL 6: CUSTOM DOS CONFIRM / MESSAGE MODAL -->
+  <!-- MODAL 6: MESSAGE MODAL -->
   <div id="modalDosMessage" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 hidden">
     <div class="dos-box-yellow max-w-sm w-full p-4 bg-[#0000A8] text-center font-mono text-xs">
-      <div id="dosMessageTitle" class="text-yellow-300 font-bold border-b border-yellow-400 pb-1 mb-2">
-        SYSTEM NOTICE
-      </div>
-      <div id="dosMessageBody" class="text-gray-200 my-3 leading-relaxed">
-        Notification text
-      </div>
+      <div id="dosMessageTitle" class="text-yellow-300 font-bold border-b border-yellow-400 pb-1 mb-2">SYSTEM NOTICE</div>
+      <div id="dosMessageBody" class="text-gray-200 my-3 leading-relaxed">Notification text</div>
       <div id="dosMessageActions" class="flex justify-center space-x-3 pt-2">
-        <button onclick="closeDosMessageModal()" class="dos-btn px-4 py-1 text-xs font-bold">
-          [ OK ]
-        </button>
+        <button onclick="closeDosMessageModal()" class="dos-btn px-4 py-1 text-xs font-bold">[ OK ]</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 7: IN-GAME DECK BUILDER / JSON MANAGER -->
+  <!-- MODAL 7: DECK MANAGER -->
   <div id="modalDeckManager" class="fixed inset-0 bg-black/90 flex items-center justify-center p-2 sm:p-4 z-50 hidden">
     <div class="dos-box-yellow max-w-4xl w-full p-4 bg-[#0000A8] max-h-[92vh] flex flex-col justify-between">
       <div class="flex justify-between items-center border-b-2 border-yellow-400 pb-1 mb-2">
         <span class="text-yellow-300 font-bold text-sm sm:text-base">╔══ CLUE DECK MANAGER [FAT TABLE] ══╗</span>
         <button onclick="closeDeckModal()" class="text-red-400 font-bold hover:text-white text-xs">[ ESC: CLOSE ]</button>
       </div>
-
       <div class="flex flex-wrap gap-2 justify-between items-center text-xs mb-2 bg-[#000078] p-2 border border-cyan-400 font-mono">
         <div>Configure categories, prompts, secret answers & media URLs.</div>
         <div class="flex space-x-2">
@@ -732,13 +673,8 @@
           <button onclick="restoreDefaultDeck()" class="dos-btn px-2 py-0.5 text-cyan-300">[ 🔄 FACTORY DECK ]</button>
         </div>
       </div>
-
-      <!-- Category Tab Buttons -->
       <div id="deckCategoryTabs" class="flex flex-wrap gap-1 text-xs mb-2"></div>
-
-      <!-- Active Category Editor -->
       <div id="deckCluesEditor" class="flex-1 overflow-y-auto space-y-2 pr-1 text-xs font-mono"></div>
-
       <div class="border-t border-cyan-400 pt-2 mt-2 flex justify-between items-center text-xs">
         <span class="text-gray-400">Total Sectors: 30 / 30</span>
         <button onclick="saveAndApplyDeckChanges()" class="dos-btn dos-btn-green px-4 py-1.5 font-bold">
@@ -748,7 +684,7 @@
     </div>
   </div>
 
-  <!-- MODAL 8: VICTORY CEREMONY / GAME OVER -->
+  <!-- MODAL 8: VICTORY CEREMONY -->
   <div id="modalVictory" class="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50 hidden">
     <div class="dos-box-yellow max-w-xl w-full p-5 bg-[#0000A8] text-center font-mono">
       <div class="text-yellow-300 text-lg font-bold mb-2">
@@ -756,8 +692,6 @@
         ║        GAME OVER // DEFRAG CEREMONY COMPLETE          ║<br>
         ╚═══════════════════════════════════════════════════════╝
       </div>
-      
-      <!-- ASCII TROPHY -->
       <pre class="text-yellow-300 text-xs font-mono my-2 select-none leading-none">
         ___________
        '._==_==_=_.'
@@ -770,27 +704,13 @@
           _.' '._
          `"""""""`
       </pre>
-
-      <div id="victoryWinnerBanner" class="text-2xl sm:text-3xl font-bold text-white mb-2">
-        CHAMPION: TEAM BLUE
-      </div>
-      <div id="victoryFinalScores" class="text-base sm:text-lg text-cyan-300 mb-3">
-        FINAL ASSETS: BLUE: $2,400  │  RED: $1,200
-      </div>
-
-      <div class="border border-cyan-400 bg-[#000060] p-2.5 text-xs text-gray-200 mb-4">
-        <div>STATUS: ALL 30 CLUSTER SECTORS FULLY DEFRAGMENTED.</div>
-        <div>MATCH RUNTIME: <span id="victoryMatchTime">14:20</span></div>
-        <div>TACTICAL CHALLENGES EXECUTED: <span id="victoryChallengesCount">1</span></div>
-      </div>
-
+      <div id="victoryWinnerBanner" class="text-2xl sm:text-3xl font-bold text-white mb-2">CHAMPION: TEAM BLUE</div>
+      <div id="victoryFinalScores" class="text-base sm:text-lg text-cyan-300 mb-3">FINAL ASSETS: BLUE: $0  │  RED: $0</div>
       <div class="flex justify-center space-x-3">
         <button onclick="triggerHostResetMatch(); closeVictoryModal();" class="dos-btn dos-btn-yellow px-5 py-1.5 font-bold">
           [ 🔄 PLAY AGAIN (RESET) ]
         </button>
-        <button onclick="closeVictoryModal()" class="dos-btn px-4 py-1.5">
-          [ CLOSE BANNER ]
-        </button>
+        <button onclick="closeVictoryModal()" class="dos-btn px-4 py-1.5">[ CLOSE BANNER ]</button>
       </div>
     </div>
   </div>
@@ -817,15 +737,13 @@
   <!-- ========================================== -->
   <script>
     /* -------------------------------------------------------------
-       AUDIO SYNTHESIZER (8-BIT PC-SPEAKER ENGINE)
+       AUDIO SYNTHESIZER
     -------------------------------------------------------------- */
     let audioCtx = null;
     let isSoundMuted = false;
 
     function initAudio() {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
 
     function playTone(freq, duration = 0.08, type = 'square', gainVal = 0.1) {
@@ -876,7 +794,7 @@
     };
 
     /* -------------------------------------------------------------
-       DEFAULT DECK CONFIGURATION (6 Categories x 5 values)
+       DEFAULT DECK CONFIGURATION
     -------------------------------------------------------------- */
     const DEFAULT_DECK = [
       {
@@ -942,10 +860,9 @@
     ];
 
     /* -------------------------------------------------------------
-       STATE MANAGEMENT & MULTI-DEVICE SOCKET.IO ENGINE
+       STATE MANAGEMENT & MULTI-DEVICE SOCKET ENGINE
     -------------------------------------------------------------- */
     const socket = (typeof io !== 'undefined') ? io() : null;
-    const localBus = new BroadcastChannel('dos_jeopardy_sync_bus');
 
     let myRole = localStorage.getItem('dos_player_role') || 'board';
     let myPlayerName = localStorage.getItem('dos_player_name') || ("Operator_" + Math.floor(100 + Math.random() * 900));
@@ -974,7 +891,7 @@
       lastSelectionAttribution: null,
       tacticalAlert: null,
       logs: ["[00:00:00] MS-DOS DEFRAG ENGINE v4.0 READY. Render Socket Online."],
-      roster: { blue: 0, red: 0 }
+      roster: { host: null, blue: [], red: [], spectators: [] }
     };
 
     function syncState(broadcastSound = null) {
@@ -983,10 +900,13 @@
       if (socket && socket.connected) {
         socket.emit('game_message', payload);
       }
-      localBus.postMessage(payload);
     }
 
     if (socket) {
+      socket.on('connect', () => {
+        socket.emit('game_message', { type: 'ROSTER_JOIN', user: myPlayerName, role: myRole });
+      });
+
       socket.on('game_message', (data) => {
         if (!data) return;
         if (data.type === 'STATE_UPDATE') {
@@ -1002,18 +922,6 @@
         }
       });
     }
-
-    localBus.onmessage = (e) => {
-      const data = e.data;
-      if (!data) return;
-      if (data.type === 'STATE_UPDATE') {
-        gameState = data.state;
-        renderAll();
-      } else if (data.type === 'LIVE_KEY') {
-        gameState.liveDraft = data.liveDraft;
-        renderLiveTypingDrafts();
-      }
-    };
 
     window.resetClientSession = function() {
       if (confirm("Reset callsign, role, and PIN lockout cache?")) {
@@ -1084,7 +992,7 @@
     }
 
     /* -------------------------------------------------------------
-       ROLE MANAGEMENT (TEAM-HOPPING PERMITTED FOR TESTING)
+       ROLE MANAGEMENT WITH ACCURATE SOCKET ROSTER REGISTRATION
     -------------------------------------------------------------- */
     window.openLobbyModal = function() {
       window.sfxKeyClick();
@@ -1139,19 +1047,20 @@
       myRole = role;
       localStorage.setItem('dos_player_role', role);
 
-      document.getElementById('viewBoard').classList.remove('hidden'); // Everyone sees board
+      if (socket && socket.connected) {
+        socket.emit('game_message', { type: 'ROSTER_JOIN', user: myPlayerName, role: myRole });
+      }
+
+      document.getElementById('viewBoard').classList.remove('hidden');
       const hostConsole = document.getElementById('viewHost');
-      const hostControls = document.getElementById('hostQuickBarControls');
       const pill = document.getElementById('playerRolePill');
 
       if (role === 'host') {
         hostConsole.classList.remove('hidden');
-        hostControls.classList.remove('hidden');
         pill.innerText = "ROLE: 👑 HOST MASTER";
         pill.className = "hidden sm:inline bg-black text-red-400 px-2 py-0.5 border border-red-500 font-mono";
       } else {
         hostConsole.classList.add('hidden');
-        hostControls.classList.add('hidden');
         if (role === 'board') {
           pill.innerText = "ROLE: BOARD (SPECTATOR)";
           pill.className = "hidden sm:inline bg-black text-yellow-300 px-2 py-0.5 border border-yellow-400 font-mono";
@@ -1166,13 +1075,13 @@
     }
 
     /* -------------------------------------------------------------
-       HOST-ONLY AUTHORITATIVE TIMER LOOP (PREVENTS ACCELERATION)
+       AUTHORITATIVE HOST-ONLY TIMER CLOCK LOOP
     -------------------------------------------------------------- */
     setInterval(() => {
       const now = new Date();
       document.getElementById('dosClock').innerText = now.toTimeString().split(' ')[0];
 
-      // Only the Host computes the active clock countdown!
+      // ONLY the Host executes the countdown math to prevent multi-client speed-up!
       if (myRole !== 'host') return;
       if (gameState.isPaused || gameState.phase === 'HOST_CONFIRM' || gameState.phase === 'GAME_OVER') return;
 
@@ -1183,7 +1092,7 @@
           if (gameState.selectionTimer === 3) window.sfxCountdown(3);
           syncState();
         } else {
-          // Time expired on selection: freeze and do NOT automate!
+          // Time expired: freeze and do NOT automate!
           gameState.selectionTimerRunning = false;
           gameState.phase = 'SELECTION_TIMEOUT';
           addEventLog(`[SELECTION EXPIRED] Time up for ${gameState.selectingTeam.toUpperCase()}. Awaiting Host.`);
@@ -1203,7 +1112,7 @@
           else if (gameState.phase === 'TYPING' || gameState.phase === 'STEAL_TYPING') gameState.phase = 'TYPING_TIMEOUT';
           else if (gameState.phase === 'STEAL_THINKING') gameState.phase = 'THINKING_TIMEOUT';
           window.sfxIncorrect();
-          addEventLog(`[TIME EXPIRED] Phase elapsed. Awaiting Host action.`);
+          addEventLog(`[TIME EXPIRED] Phase elapsed. Awaiting Host command.`);
           syncState();
         }
       }
@@ -1230,6 +1139,8 @@
       renderBoardGrid();
       renderPersistentInputBar();
       renderHostDashboard();
+      renderHostConfirmModal(); // CRITICAL BUG FIX: Ensure host confirm modal renders!
+      renderTacticalAlertModal();
       renderClueStage();
       renderLogs();
     }
@@ -1237,6 +1148,16 @@
     function renderBoardHUD() {
       document.getElementById('boardBlueScore').innerText = `$ ${gameState.scores.blue}`;
       document.getElementById('boardRedScore').innerText = `$ ${gameState.scores.red}`;
+
+      // Update Live Rosters on Board
+      const bluePlayers = gameState.roster?.blue || [];
+      const redPlayers = gameState.roster?.red || [];
+      document.getElementById('boardBlueRoster').innerText = bluePlayers.length > 0 ? bluePlayers.join(', ') : '(None connected)';
+      document.getElementById('boardRedRoster').innerText = redPlayers.length > 0 ? redPlayers.join(', ') : '(None connected)';
+
+      // Update Ribbon Host & Spectator telemetry
+      document.getElementById('headerHostName').innerText = gameState.roster?.host || 'None';
+      document.getElementById('headerSpectatorCount').innerText = (gameState.roster?.spectators || []).length;
 
       const isBlue = gameState.selectingTeam === 'blue';
       const hudBlue = document.getElementById('hudBlueBox');
@@ -1267,7 +1188,7 @@
         : "px-2 py-0.5 font-bold uppercase border border-red-400 bg-red-950 text-red-300";
 
       let timerBadgeText = `[ ${gameState.selectionTimer}s ${gameState.selectionTimerRunning ? 'RUNNING' : 'PAUSED'} ]`;
-      if (gameState.phase === 'SELECTION_TIMEOUT') timerBadgeText = "[ TIME EXPIRED — WAITING HOST ]";
+      if (gameState.phase === 'SELECTION_TIMEOUT') timerBadgeText = "[ 00s TIME EXPIRED — WAITING HOST ]";
       else if (gameState.phase !== 'SELECTION') timerBadgeText = `[ ${gameState.phase.replace('_', ' ')} ]`;
       document.getElementById('turnTimerBadge').innerText = timerBadgeText;
 
@@ -1308,8 +1229,9 @@
       let html = '';
       const values = [200, 400, 600, 800, 1000];
 
-      // Grid is interactable only for selecting team or host during SELECTION
-      const canClick = (myRole === gameState.selectingTeam || myRole === 'host') && (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT');
+      // Unlocked for selecting team OR host during SELECTION phases
+      const canClick = (myRole === gameState.selectingTeam || myRole === 'host') && 
+                       (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT');
 
       values.forEach((val, valIdx) => {
         gameDeck.forEach((cat, catIdx) => {
@@ -1350,7 +1272,6 @@
       const isAnsweringSquad = (myRole === gameState.turnSubmittingTeam);
       const isDefendingSquad = (myRole === (gameState.turnSubmittingTeam === 'blue' ? 'red' : 'blue'));
 
-      // Check if typing allowed right now
       const isTypingPhase = (gameState.phase === 'TYPING' || gameState.phase === 'STEAL_TYPING');
       const isThinkingPhase = (gameState.phase === 'THINKING' || gameState.phase === 'STEAL_THINKING');
 
@@ -1371,19 +1292,11 @@
         btnSubmit.disabled = true;
       }
 
-      // Ready to answer button (Answering team during thinking)
-      if (isAnsweringSquad && isThinkingPhase) {
-        btnSkip.classList.remove('hidden');
-      } else {
-        btnSkip.classList.add('hidden');
-      }
+      if (isAnsweringSquad && isThinkingPhase) btnSkip.classList.remove('hidden');
+      else btnSkip.classList.add('hidden');
 
-      // Tactical Challenge Button (Defending team during thinking)
-      if (isDefendingSquad && isThinkingPhase && !gameState.isTacticalGambleUsed) {
-        btnChallenge.classList.remove('hidden');
-      } else {
-        btnChallenge.classList.add('hidden');
-      }
+      if (isDefendingSquad && isThinkingPhase && !gameState.isTacticalGambleUsed) btnChallenge.classList.remove('hidden');
+      else btnChallenge.classList.add('hidden');
 
       renderLiveTypingDrafts();
     }
@@ -1412,7 +1325,20 @@
       }
     }
 
+    /* -------------------------------------------------------------
+       SIMPLIFIED DYNAMIC HOST ACTION DESK (CHANGES PER PHASE)
+    -------------------------------------------------------------- */
     function renderHostDashboard() {
+      const hostConsole = document.getElementById('viewHost');
+      if (myRole !== 'host') {
+        hostConsole.classList.add('hidden');
+        return;
+      }
+      hostConsole.classList.remove('hidden');
+
+      document.getElementById('hostPhaseTitleBadge').innerText = `PHASE: ${gameState.phase.replace('_', ' ')}`;
+      const actionBox = document.getElementById('hostDynamicActionBox');
+
       const blueInput = document.getElementById('hostOverrideBlueInput');
       const redInput = document.getElementById('hostOverrideRedInput');
       if (document.activeElement !== blueInput) blueInput.value = gameState.scores.blue;
@@ -1421,40 +1347,154 @@
       const pauseBtn = document.getElementById('hostPauseBtn');
       pauseBtn.innerText = gameState.isPaused ? "[ ▶ RESUME CLOCK ]" : "[ ⏸ PAUSE CLOCK ]";
 
+      // Secret Answer Preview
       if (gameState.activeClue) {
         const cat = gameDeck[gameState.activeClue.catIdx];
-        document.getElementById('hostCluePill').innerText = `${cat.category} - $${gameState.activeClue.value}`;
-        document.getElementById('hostCluePrompt').innerText = gameState.activeClue.q;
-        document.getElementById('hostSecretAnswer').innerText = cat.clues[gameState.activeClue.clueIdx].a;
+        document.getElementById('hostSecretAnswerPreview').innerText = cat.clues[gameState.activeClue.clueIdx].a;
+      } else if (gameState.pendingHostClue) {
+        const cat = gameDeck[gameState.pendingHostClue.catIdx];
+        document.getElementById('hostSecretAnswerPreview').innerText = cat.clues[gameState.pendingHostClue.clueIdx].a;
       } else {
-        document.getElementById('hostCluePill').innerText = "NO ACTIVE CLUE";
-        document.getElementById('hostCluePrompt').innerText = "Waiting for tile selection...";
-        document.getElementById('hostSecretAnswer').innerText = "[ NONE ]";
+        document.getElementById('hostSecretAnswerPreview').innerText = "[ NO ACTIVE CLUE ]";
       }
 
-      const btnCorrect = document.getElementById('btnHostCorrect');
-      const btnIncorrect = document.getElementById('btnHostIncorrect');
-      const submitPill = document.getElementById('hostSubmittingPlayerPill');
-      const answerStr = document.getElementById('hostAnswerString');
-      const statusTag = document.getElementById('hostAnswerStatusTag');
-
+      // Submission Preview
       if (gameState.lockedSubmission) {
-        const sub = gameState.lockedSubmission;
-        submitPill.innerText = `SUBMITTED BY: ${sub.player} (${sub.team.toUpperCase()})`;
-        answerStr.innerText = `"${sub.text}"`;
-        statusTag.innerText = "LOCKED IN";
-        statusTag.className = "text-xs px-2 py-0.5 bg-green-900 text-green-300 font-bold border border-green-500";
-        btnCorrect.disabled = false;
-        btnIncorrect.disabled = false;
+        document.getElementById('hostSubmittedAnswerPreview').innerText = `"${gameState.lockedSubmission.text}" by ${gameState.lockedSubmission.player} (${gameState.lockedSubmission.team.toUpperCase()})`;
       } else {
-        submitPill.innerText = gameState.turnSubmittingTeam ? `ACTIVE: ${gameState.turnSubmittingTeam.toUpperCase()}` : "WAITING";
-        answerStr.innerText = (gameState.phase === 'TYPING' || gameState.phase === 'STEAL_TYPING')
-          ? "[ TEAM IS TYPING... ]"
-          : "[ NO SUBMISSION YET ]";
-        statusTag.innerText = "PENDING";
-        statusTag.className = "text-xs px-2 py-0.5 bg-gray-800 text-gray-400 font-bold";
-        btnCorrect.disabled = true;
-        btnIncorrect.disabled = true;
+        document.getElementById('hostSubmittedAnswerPreview').innerText = "[ NO SUBMISSION YET ]";
+      }
+
+      // DYNAMIC CONTENT BASED ON CURRENT GAME PHASE
+      let html = '';
+
+      if (gameState.phase === 'SELECTION') {
+        html = `
+          <div class="text-xs text-yellow-300 font-bold mb-2">
+            TURN: SQUADRON ${gameState.selectingTeam.toUpperCase()} IS CHOOSING A TILE (${gameState.selectionTimer}s remaining)
+          </div>
+          <div class="flex flex-wrap gap-2">
+            ${gameState.selectionTimerRunning 
+              ? `<button onclick="hostToggleSelectionTimer(false)" class="dos-btn dos-btn-yellow px-3 py-1.5">[ ⏸ PAUSE 20s TIMER ]</button>`
+              : `<button onclick="hostToggleSelectionTimer(true)" class="dos-btn dos-btn-green px-3 py-1.5">[ ▶ START 20s SELECTION TIMER ]</button>`}
+            <button onclick="hostAddSeconds(10)" class="dos-btn px-3 py-1.5">[ +10s TIME ]</button>
+            <button onclick="hostForfeitSelection()" class="dos-btn dos-btn-red px-3 py-1.5">[ ⏩ PASS TURN TO ${gameState.selectingTeam === 'blue' ? 'RED' : 'BLUE'} ]</button>
+          </div>
+        `;
+      } 
+      else if (gameState.phase === 'SELECTION_TIMEOUT') {
+        html = `
+          <div class="text-xs text-red-400 font-bold mb-2 animate-pulse">
+            ⚠️ 20s SELECTION TIME EXPIRED! ${gameState.selectingTeam.toUpperCase()} DID NOT PICK A TILE.
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="hostForfeitSelection()" class="dos-btn dos-btn-red px-3 py-1.5 font-bold">[ ⏩ FORFEIT -> PASS TURN TO ${gameState.selectingTeam === 'blue' ? 'RED' : 'BLUE'} ]</button>
+            <button onclick="hostAddSeconds(10)" class="dos-btn dos-btn-yellow px-3 py-1.5">[ +10s MORE TIME ]</button>
+          </div>
+          <div class="text-[10px] text-gray-400 mt-2 font-mono">Or click any cluster directly on the grid above to force-select for them.</div>
+        `;
+      }
+      else if (gameState.phase === 'HOST_CONFIRM') {
+        const cat = gameDeck[gameState.pendingHostClue?.catIdx];
+        html = `
+          <div class="text-xs text-yellow-300 font-bold mb-2">
+            ⚠️ TILE SELECTED: <span class="text-white">${cat?.category} $${gameState.pendingHostClue?.value}</span> by <span class="text-cyan-300">${gameState.lastSelectionAttribution?.player} (${gameState.selectingTeam.toUpperCase()})</span>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button onclick="hostConfirmClueExecution(true)" class="dos-btn dos-btn-green px-4 py-2 font-bold text-sm">[ ✅ CONFIRM & REVEAL CLUE (ENTER) ]</button>
+            <button onclick="hostConfirmClueExecution(false)" class="dos-btn dos-btn-red px-4 py-2 font-bold text-sm">[ ❌ REJECT SELECTION (ESC) ]</button>
+          </div>
+        `;
+      }
+      else if (gameState.phase === 'THINKING') {
+        html = `
+          <div class="text-xs text-yellow-300 font-bold mb-2">
+            🧠 60s THINKING PHASE FOR SQUADRON ${gameState.turnSubmittingTeam.toUpperCase()} (Clock: ${gameState.timer}s)
+          </div>
+          <div class="flex flex-wrap gap-2">
+            ${gameState.timerRunning 
+              ? `<button onclick="hostToggleThinkingTimer(false)" class="dos-btn dos-btn-yellow px-3 py-1.5">[ ⏸ PAUSE 60s TIMER ]</button>`
+              : `<button onclick="hostToggleThinkingTimer(true)" class="dos-btn dos-btn-green px-3 py-1.5 font-bold">[ ▶ START 60s TIMER ]</button>`}
+            <button onclick="hostProceedToTyping()" class="dos-btn dos-btn-yellow px-3 py-1.5">[ ⚡ FORCE 15s TYPING NOW ]</button>
+            <button onclick="hostAddSeconds(10)" class="dos-btn px-3 py-1.5">[ +10s TIME ]</button>
+          </div>
+        `;
+      }
+      else if (gameState.phase === 'THINKING_TIMEOUT') {
+        html = `
+          <div class="text-xs text-red-400 font-bold mb-2 animate-pulse">
+            ⚠️ 60s THINKING TIME EXPIRED!
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="hostProceedToTyping()" class="dos-btn dos-btn-green px-4 py-1.5 font-bold">[ ⚡ PROCEED TO 15s TYPING ]</button>
+            <button onclick="hostAddSeconds(10)" class="dos-btn dos-btn-yellow px-3 py-1.5">[ +10s MORE THINKING ]</button>
+          </div>
+        `;
+      }
+      else if (gameState.phase === 'TYPING' || gameState.phase === 'STEAL_TYPING') {
+        html = `
+          <div class="text-xs text-yellow-300 font-bold mb-2">
+            ⌨️ 15s TYPING COUNTDOWN: SQUADRON ${gameState.turnSubmittingTeam.toUpperCase()} (Remaining: ${gameState.timer}s)
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="hostToggleThinkingTimer(!gameState.timerRunning)" class="dos-btn dos-btn-yellow px-3 py-1.5">${gameState.timerRunning ? '[ ⏸ PAUSE ]' : '[ ▶ RESUME ]'}</button>
+            <button onclick="hostAddSeconds(10)" class="dos-btn px-3 py-1.5">[ +10s TIME ]</button>
+            <button onclick="hostForceTimeoutAnswer()" class="dos-btn dos-btn-red px-3 py-1.5">[ ⏰ FORCE TIMEOUT / NO ANSWER ]</button>
+          </div>
+        `;
+      }
+      else if (gameState.phase === 'TYPING_TIMEOUT') {
+        html = `
+          <div class="text-xs text-red-400 font-bold mb-2 animate-pulse">
+            ⚠️ 15s TYPING EXPIRED WITH NO ANSWER LOCKED IN!
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="hostForceTimeoutAnswer()" class="dos-btn dos-btn-red px-4 py-1.5 font-bold">[ ❌ RULE AS INCORRECT / TIMEOUT ]</button>
+            <button onclick="hostAddSeconds(10)" class="dos-btn dos-btn-yellow px-3 py-1.5">[ +10s GRACE TIME ]</button>
+          </div>
+        `;
+      }
+      else if (gameState.phase === 'HOST_JUDGING') {
+        html = `
+          <div class="text-xs text-yellow-300 font-bold mb-2">
+            ⚖️ VERDICT REQUIRED FOR SQUADRON ${gameState.lockedSubmission?.team.toUpperCase()}
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button onclick="hostAwardVerdict(true)" class="dos-btn dos-btn-green px-4 py-2 font-bold text-sm">[ ✅ CORRECT (+$$$) ]</button>
+            <button onclick="hostAwardVerdict(false)" class="dos-btn dos-btn-red px-4 py-2 font-bold text-sm">[ ❌ INCORRECT (NEXT/STEAL) ]</button>
+            <button onclick="triggerHostVoidSubmission()" class="dos-btn dos-btn-yellow px-3 py-2 text-xs">[ ↩ VOID & REFUND 15s ]</button>
+          </div>
+        `;
+      }
+      else {
+        html = `<div class="text-xs text-gray-300">SYSTEM IDLE // STANDBY</div>`;
+      }
+
+      actionBox.innerHTML = html;
+    }
+
+    function renderHostConfirmModal() {
+      const modal = document.getElementById('modalHostConfirm');
+      if (gameState.phase === 'HOST_CONFIRM' && gameState.pendingHostClue) {
+        modal.classList.remove('hidden');
+        const cat = gameDeck[gameState.pendingHostClue.catIdx];
+        document.getElementById('confirmModalCategory').innerText = cat.category;
+        document.getElementById('confirmModalValue').innerText = `$ ${gameState.pendingHostClue.value}`;
+        document.getElementById('confirmModalTeam').innerText = gameState.selectingTeam.toUpperCase();
+        document.getElementById('confirmModalPlayer').innerText = gameState.lastSelectionAttribution?.player || "Player";
+
+        const hostBtns = document.getElementById('confirmModalHostButtons');
+        const nonHostNotice = document.getElementById('confirmModalNonHostNotice');
+
+        if (myRole === 'host') {
+          hostBtns.classList.remove('hidden');
+          nonHostNotice.classList.add('hidden');
+        } else {
+          hostBtns.classList.add('hidden');
+          nonHostNotice.classList.remove('hidden');
+        }
+      } else {
+        modal.classList.add('hidden');
       }
     }
 
@@ -1508,10 +1548,6 @@
       } else {
         boardTyping.classList.add('hidden');
       }
-
-      const stageHostActions = document.getElementById('stageHostActions');
-      if (myRole === 'host') stageHostActions.classList.remove('hidden');
-      else stageHostActions.classList.add('hidden');
     }
 
     /* -------------------------------------------------------------
@@ -1538,36 +1574,11 @@
         val: clue.value
       };
 
-      // Freeze selection timer instantly
       gameState.selectionTimerRunning = false;
       gameState.phase = 'HOST_CONFIRM';
       addEventLog(`[TILE CLICKED] ${gameDeck[catIdx].category} $${clue.value} by ${myPlayerName}. Awaiting Host confirmation.`);
       syncState();
     };
-
-    function renderHostConfirmModal() {
-      const modal = document.getElementById('modalHostConfirm');
-      if (gameState.phase === 'HOST_CONFIRM' && gameState.pendingHostClue) {
-        modal.classList.remove('hidden');
-        document.getElementById('confirmModalCategory').innerText = gameDeck[gameState.pendingHostClue.catIdx].category;
-        document.getElementById('confirmModalValue').innerText = `$ ${gameState.pendingHostClue.value}`;
-        document.getElementById('confirmModalTeam').innerText = gameState.selectingTeam.toUpperCase();
-        document.getElementById('confirmModalPlayer').innerText = gameState.lastSelectionAttribution?.player || "Player";
-
-        const hostBtns = document.getElementById('confirmModalHostButtons');
-        const nonHostNotice = document.getElementById('confirmModalNonHostNotice');
-
-        if (myRole === 'host') {
-          hostBtns.classList.remove('hidden');
-          nonHostNotice.classList.add('hidden');
-        } else {
-          hostBtns.classList.add('hidden');
-          nonHostNotice.classList.remove('hidden');
-        }
-      } else {
-        modal.classList.add('hidden');
-      }
-    }
 
     window.hostConfirmClueExecution = function(confirmed) {
       if (myRole !== 'host') return;
@@ -1576,7 +1587,7 @@
       if (!confirmed) {
         gameState.pendingHostClue = null;
         gameState.phase = 'SELECTION';
-        gameState.selectionTimerRunning = true; // Resumes from the exact second paused!
+        gameState.selectionTimerRunning = true;
         addEventLog("[HOST ABORT] Tile rejected. Selection timer resumed.");
         syncState();
         return;
@@ -1705,11 +1716,10 @@
           window.sfxCountdown(0);
         } else {
           clearInterval(interval);
-          // Thinking phase opens PAUSED at 60s!
           gameState.phase = 'THINKING';
           gameState.timer = 60;
-          gameState.timerRunning = false; // NEVER auto-starts!
-          addEventLog(`[CLUE REVEALED] Thinking phase paused at 60s. Waiting for Host to start timer.`);
+          gameState.timerRunning = false;
+          addEventLog(`[CLUE REVEALED] Thinking phase paused at 60s. Waiting for Host.`);
           syncState();
         }
       }, 1000);
@@ -1718,22 +1728,21 @@
     /* -------------------------------------------------------------
        HOST MANUAL TIMERS & ACTIONS
     -------------------------------------------------------------- */
-    window.hostStartSelectionTimer = function() {
+    window.hostToggleSelectionTimer = function(start) {
       if (myRole !== 'host') return;
       window.sfxKeyClick();
-      gameState.selectionTimer = 20;
-      gameState.selectionTimerRunning = true;
-      gameState.phase = 'SELECTION';
-      addEventLog("[HOST] 20s Category Selection timer started.");
+      gameState.selectionTimerRunning = start;
+      if (start) gameState.phase = 'SELECTION';
+      addEventLog(`[HOST] 20s Selection Timer ${start ? 'started' : 'paused'}.`);
       syncState();
     };
 
-    window.hostStartThinkingTimer = function() {
+    window.hostToggleThinkingTimer = function(start) {
       if (myRole !== 'host') return;
       window.sfxKeyClick();
-      gameState.timerRunning = true;
+      gameState.timerRunning = start;
       gameState.isPaused = false;
-      addEventLog(`[HOST] ${gameState.timer}s countdown started.`);
+      addEventLog(`[HOST] Timer ${start ? 'started' : 'paused'}.`);
       syncState();
     };
 
@@ -1747,12 +1756,32 @@
       syncState();
     };
 
+    window.hostForceTimeoutAnswer = function() {
+      if (myRole !== 'host') return;
+      window.sfxKeyClick();
+      gameState.lockedSubmission = {
+        team: gameState.turnSubmittingTeam,
+        player: "SYSTEM_TIMEOUT",
+        text: "[NO ANSWER / TIMEOUT]"
+      };
+      gameState.phase = 'HOST_JUDGING';
+      gameState.timerRunning = false;
+      addEventLog(`[HOST] Ruled as No Answer / Timeout.`);
+      syncState();
+    };
+
     window.hostAddSeconds = function(sec) {
       if (myRole !== 'host') return;
       window.sfxKeyClick();
-      if (gameState.phase === 'SELECTION') gameState.selectionTimer += sec;
-      else gameState.timer += sec;
-      addEventLog(`[HOST] Added +${sec}s to active clock.`);
+      if (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT') {
+        gameState.selectionTimer += sec;
+        gameState.phase = 'SELECTION';
+      } else {
+        gameState.timer += sec;
+        if (gameState.phase === 'THINKING_TIMEOUT') gameState.phase = 'THINKING';
+        if (gameState.phase === 'TYPING_TIMEOUT') gameState.phase = 'TYPING';
+      }
+      addEventLog(`[HOST] Added +${sec}s.`);
       syncState();
     };
 
@@ -1788,14 +1817,12 @@
       gameState.isTacticalGambleUsed = true;
       gameState.challengerTeam = defending;
 
-      // Broadcast tactical challenge state to all
       gameState.tacticalAlert = {
         active: true,
         player: myPlayerName,
         team: defending
       };
 
-      // Force 15s typing immediately
       gameState.phase = 'TYPING';
       gameState.timer = 15;
       gameState.timerRunning = true;
@@ -1831,7 +1858,6 @@
       if (socket && socket.connected) {
         socket.emit('game_message', { type: 'LIVE_KEY', liveDraft: gameState.liveDraft });
       }
-      localBus.postMessage({ type: 'LIVE_KEY', liveDraft: gameState.liveDraft });
       renderLiveTypingDrafts();
     });
 
@@ -1852,7 +1878,7 @@
         text: answerVal
       };
       gameState.phase = 'HOST_JUDGING';
-      gameState.timerRunning = false; // Freeze clock immediately on submit
+      gameState.timerRunning = false;
       answerInput.value = '';
 
       addEventLog(`[ANSWER SUBMITTED] by ${myPlayerName} (${gameState.turnSubmittingTeam.toUpperCase()}): "${answerVal}"`);
@@ -1881,7 +1907,6 @@
 
         if (gameState.isTacticalGambleUsed) {
           if (answeringTeam !== gameState.challengerTeam) {
-            // Defending challenger gets 15s to answer
             gameState.turnSubmittingTeam = gameState.challengerTeam;
             gameState.phase = 'STEAL_TYPING';
             gameState.timer = 15;
@@ -1891,18 +1916,16 @@
             addEventLog(`[CHALLENGE STEAL] ${gameState.challengerTeam.toUpperCase()} has 15s to answer. (-$${clueVal} if missed)`);
             syncState('incorrect');
           } else {
-            // Challenger failed gamble: full penalty
             gameState.scores[gameState.challengerTeam] -= clueVal;
             addEventLog(`[⚠️ FULL PENALTY] ${gameState.challengerTeam.toUpperCase()} failed tactical challenge (-$${clueVal})!`);
             finishClueRound('incorrect');
           }
         } else {
-          // Normal miss flow
           if (answeringTeam === gameState.selectingTeam) {
             gameState.turnSubmittingTeam = otherTeam;
             gameState.phase = 'STEAL_THINKING';
             gameState.timer = 20;
-            gameState.timerRunning = false; // Paused steal thinking
+            gameState.timerRunning = false;
             gameState.lockedSubmission = null;
             gameState.liveDraft = { author: "", text: "" };
             addEventLog(`[NORMAL STEAL] Opportunity shifts to ${otherTeam.toUpperCase()} (20s thinking, $0 miss).`);
@@ -1923,10 +1946,9 @@
 
       document.getElementById('modalClueStage').classList.add('hidden');
 
-      // STRICT TURN ALTERNATION: Blue -> Red -> Blue -> Red...
       gameState.selectingTeam = gameState.selectingTeam === 'blue' ? 'red' : 'blue';
       gameState.selectionTimer = 20;
-      gameState.selectionTimerRunning = false; // Waiting for Host to start
+      gameState.selectionTimerRunning = false;
       gameState.phase = 'SELECTION';
       gameState.activeClue = null;
       gameState.lockedSubmission = null;
@@ -2038,7 +2060,7 @@
             lastSelectionAttribution: null,
             tacticalAlert: null,
             logs: ["[RESET] Match rebooted by Host. Board restored."],
-            roster: { blue: 0, red: 0 }
+            roster: gameState.roster // Preserve connected players
           };
           syncState();
         },
