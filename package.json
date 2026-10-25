@@ -1,7 +1,11 @@
 {
   "name": "dos-jeopardy",
-  "version": "1.0.0",
+  "version": "4.0.2",
+  "description": "MS-DOS Defrag Jeopardy v4.0.2 - Authoritative Real-Time Multiplayer Trivia Engine",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node server.js"
   },
