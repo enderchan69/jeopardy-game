@@ -8,13 +8,13 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' },
   pingInterval: 10000,
-  pingTimeout: 5000,
+  pingTimeout: 20000, // Extended to 20s to prevent false disconnects during large deck uploads
   maxHttpBufferSize: 1e8 // 100 MB buffer for audio/image base64 payloads
 });
 
 const HOST_PIN = process.env.HOST_PIN || '1337';
 
-// Security Fix (CRIT-07): Serve only index.html & health check; never expose server.js or package.json
+// Security Fix: Serve only index.html & health check; never expose server.js or package.json
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -95,15 +95,13 @@ const DEFAULT_DECK = [
 
 let authoritativeDeck = JSON.parse(JSON.stringify(DEFAULT_DECK));
 
-// Strip confidential `a` field from all clues for public broadcast (CRIT-01)
+// Strip confidential `a`, `q`, and heavy `mediaUrl` strings from public board deck.
 function getPublicDeck() {
   return authoritativeDeck.map(cat => ({
     category: cat.category,
     clues: cat.clues.map(c => ({
       value: Number(c.value) || 200,
-      type: c.type || 'text',
-      q: String(c.q || ''),
-      mediaUrl: String(c.mediaUrl || '')
+      type: c.type || 'text'
     }))
   }));
 }
@@ -115,6 +113,7 @@ function createInitialGameState() {
     selectionTimer: 20,
     selectionTimerRunning: false,
     selectionTimerWasRunning: false,
+    isShuffleRunning: false,
     clearedClues: [],
     phase: 'SELECTION',
     activeClue: null,
@@ -151,11 +150,13 @@ let mediaInterval = null;
 let graceTimeout = null;
 let countdownInterval = null;
 let tacticalAlertTimeout = null;
+let shuffleFallbackTimeout = null;
 
 function clearPhaseTimers() {
   if (mediaInterval) { clearInterval(mediaInterval); mediaInterval = null; }
   if (graceTimeout) { clearTimeout(graceTimeout); graceTimeout = null; }
   if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+  if (shuffleFallbackTimeout) { clearTimeout(shuffleFallbackTimeout); shuffleFallbackTimeout = null; }
 }
 
 function sanitizeName(str, maxLen = 28) {
@@ -193,7 +194,14 @@ function getSecretAnswerForCurrentState() {
   return cat.clues[ref.clueIdx].a;
 }
 
-function emitStateToSocket(socket, sfx = null, includeDeck = false) {
+function getActiveClueMediaUrl() {
+  if (!gameState.activeClue) return null;
+  const cat = authoritativeDeck[gameState.activeClue.catIdx];
+  if (!cat || !cat.clues || !cat.clues[gameState.activeClue.clueIdx]) return null;
+  return cat.clues[gameState.activeClue.clueIdx].mediaUrl || '';
+}
+
+function emitStateToSocket(socket, sfx = null, includeDeck = false, includeMedia = false) {
   const client = connectedClients.get(socket.id);
   const isHost = Boolean(client && client.isHost && client.role === 'host');
   const payload = {
@@ -206,24 +214,28 @@ function emitStateToSocket(socket, sfx = null, includeDeck = false) {
     payload.publicDeck = getPublicDeck();
     if (isHost) payload.fullDeck = authoritativeDeck;
   }
+  if (includeMedia || includeDeck) {
+    const mediaUrl = getActiveClueMediaUrl();
+    if (mediaUrl !== null) payload.activeClueMediaUrl = mediaUrl;
+  }
   socket.emit('game_message', payload);
 }
 
-function broadcastState(sfx = null, includeDeck = false) {
+function broadcastState(sfx = null, includeDeck = false, includeMedia = false) {
   for (const [socketId] of connectedClients) {
     const sock = io.sockets.sockets.get(socketId);
-    if (sock) emitStateToSocket(sock, sfx, includeDeck);
+    if (sock) emitStateToSocket(sock, sfx, includeDeck, includeMedia);
   }
 }
 
 /* -------------------------------------------------------------
    SERVER-AUTHORITATIVE MEDIA & 3-2-1-GO SEQUENCES
 -------------------------------------------------------------- */
-function startServerArcadeCountdown() {
+function startServerArcadeCountdown(sendInitialMedia = false) {
   clearPhaseTimers();
   gameState.phase = 'COUNTDOWN';
   gameState.arcadeCount = 3;
-  broadcastState('countdown_tick');
+  broadcastState('countdown_tick', false, sendInitialMedia);
 
   countdownInterval = setInterval(() => {
     if (gameState.isPaused) return;
@@ -248,7 +260,7 @@ function startServerMediaSequence() {
   gameState.phase = 'MEDIA_PLAYING';
   gameState.mediaProgress = 0;
   const isAudio = gameState.activeClue && gameState.activeClue.type === 'audio';
-  broadcastState(isAudio ? 'play_clue_audio' : null);
+  broadcastState(isAudio ? 'play_clue_audio' : null, false, true);
 
   let ticks = 0;
   const totalTicks = 25;
@@ -274,7 +286,7 @@ function runServerMediaGrace(secondsLeft) {
       runServerMediaGrace(secondsLeft - 1);
     }, 1000);
   } else {
-    startServerArcadeCountdown();
+    startServerArcadeCountdown(false);
   }
 }
 
@@ -289,6 +301,7 @@ function finishClueRound(sfxType = 'correct') {
   gameState.selectionTimer = 20;
   gameState.selectionTimerRunning = false;
   gameState.selectionTimerWasRunning = false;
+  gameState.isShuffleRunning = false;
   gameState.phase = 'SELECTION';
   gameState.activeClue = null;
   gameState.pendingHostClue = null;
@@ -310,11 +323,48 @@ function finishClueRound(sfxType = 'correct') {
   broadcastState(sfxType);
 }
 
+function lockTileForHostConfirmation(catIdx, clueIdx, playerAttributionName) {
+  if (shuffleFallbackTimeout) {
+    clearTimeout(shuffleFallbackTimeout);
+    shuffleFallbackTimeout = null;
+  }
+
+  const clue = authoritativeDeck[catIdx].clues[clueIdx];
+  gameState.pendingHostClue = {
+    catIdx,
+    clueIdx,
+    value: clue.value,
+    type: clue.type || 'text'
+  };
+
+  gameState.lastSelectionAttribution = {
+    team: gameState.selectingTeam,
+    player: playerAttributionName,
+    catName: authoritativeDeck[catIdx].category,
+    val: clue.value
+  };
+
+  if (!gameState.isShuffleRunning) {
+    gameState.selectionTimerWasRunning = gameState.selectionTimerRunning;
+  }
+  gameState.selectionTimerRunning = false;
+  gameState.isShuffleRunning = false;
+  gameState.phase = 'HOST_CONFIRM';
+
+  addServerLog(`[TILE CLICKED] ${authoritativeDeck[catIdx].category} $${clue.value} by ${playerAttributionName}. Awaiting Host confirmation.`);
+  broadcastState();
+}
+
 /* -------------------------------------------------------------
    AUTHORITATIVE 1000ms GAME CLOCK LOOP
 -------------------------------------------------------------- */
 setInterval(() => {
-  if (gameState.isPaused || gameState.phase === 'HOST_CONFIRM' || gameState.phase === 'GAME_OVER') return;
+  if (
+    gameState.isPaused ||
+    gameState.isShuffleRunning ||
+    gameState.phase === 'HOST_CONFIRM' ||
+    gameState.phase === 'GAME_OVER'
+  ) return;
 
   if (gameState.phase === 'SELECTION' && gameState.selectionTimerRunning) {
     if (gameState.selectionTimer > 0) {
@@ -353,7 +403,7 @@ io.on('connection', (socket) => {
   const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address || socket.id;
   connectedClients.set(socket.id, { user: `Operator_${socket.id.slice(0, 4)}`, role: 'board', isHost: false });
 
-  emitStateToSocket(socket, null, true);
+  emitStateToSocket(socket, null, true, true);
 
   socket.on('game_message', (msg) => {
     if (!msg || typeof msg !== 'object') return;
@@ -394,7 +444,7 @@ io.on('connection', (socket) => {
               user: cleanUser,
               fullDeck: authoritativeDeck
             });
-            broadcastState(null, true);
+            broadcastState(null, true, true);
           } else {
             lockRecord.count += 1;
             if (lockRecord.count >= 3) {
@@ -420,6 +470,7 @@ io.on('connection', (socket) => {
           return;
         }
 
+        client.isHost = false;
         client.role = ['blue', 'red', 'board', 'spectator'].includes(targetRole) ? targetRole : 'board';
         rebuildRoster();
         broadcastState();
@@ -431,6 +482,8 @@ io.on('connection', (socket) => {
       -------------------------------------------------------- */
       case 'SELECT_TILE': {
         if (gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') return;
+        if (gameState.isShuffleRunning && !msg.fromRoulette) return;
+
         const canSelect = (client.role === gameState.selectingTeam) || (client.role === 'host' && client.isHost);
         if (!canSelect) return;
 
@@ -444,47 +497,59 @@ io.on('connection', (socket) => {
         const key = `${catIdx}-${clueIdx}`;
         if (gameState.clearedClues.includes(key)) return;
 
-        const clue = authoritativeDeck[catIdx].clues[clueIdx];
-        gameState.pendingHostClue = {
-          catIdx,
-          clueIdx,
-          value: clue.value,
-          q: clue.q,
-          type: clue.type || 'text',
-          mediaUrl: clue.mediaUrl || ''
-        };
-
-        gameState.lastSelectionAttribution = {
-          team: gameState.selectingTeam,
-          player: client.user,
-          catName: authoritativeDeck[catIdx].category,
-          val: clue.value
-        };
-
-        gameState.selectionTimerWasRunning = gameState.selectionTimerRunning;
-        gameState.selectionTimerRunning = false;
-        gameState.phase = 'HOST_CONFIRM';
-
-        addServerLog(`[TILE CLICKED] ${authoritativeDeck[catIdx].category} $${clue.value} by ${client.user}. Awaiting Host confirmation.`);
-        broadcastState();
+        lockTileForHostConfirmation(catIdx, clueIdx, client.user);
         break;
       }
 
       /* -------------------------------------------------------
-         3. RANDOM SECTOR ROULETTE RELAY (FEATURE ADDITION)
+         3. RANDOM SECTOR ROULETTE RELAY
       -------------------------------------------------------- */
       case 'START_SHUFFLE_SCAN': {
         if (gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') return;
+        if (gameState.isShuffleRunning) return;
         const canTrigger = (client.role === gameState.selectingTeam) || (client.role === 'host' && client.isHost);
         if (!canTrigger) return;
 
-        // Broadcast shuffle scan event so all connected devices animate in sync
+        const availablePool = [];
+        for (let c = 0; c < authoritativeDeck.length; c++) {
+          for (let r = 0; r < 5; r++) {
+            const key = `${c}-${r}`;
+            if (!gameState.clearedClues.includes(key)) {
+              availablePool.push({ catIdx: c, valIdx: r });
+            }
+          }
+        }
+        if (availablePool.length === 0) return;
+
+        let chosenTarget = availablePool[Math.floor(Math.random() * availablePool.length)];
+        if (msg.target && Number.isInteger(msg.target.catIdx) && Number.isInteger(msg.target.valIdx)) {
+          const validMatch = availablePool.find(
+            t => t.catIdx === msg.target.catIdx && t.valIdx === msg.target.valIdx
+          );
+          if (validMatch) chosenTarget = validMatch;
+        }
+
+        gameState.selectionTimerWasRunning = gameState.selectionTimerRunning;
+        gameState.selectionTimerRunning = false;
+        gameState.isShuffleRunning = true;
+        addServerLog(`[DEFRAG SCAN] Sector roulette initiated by ${client.user}...`);
+        broadcastState();
+
         io.emit('game_message', {
           type: 'START_SHUFFLE_SCAN',
-          target: msg.target,
-          pool: msg.pool,
-          caller: client.user
+          target: chosenTarget,
+          pool: availablePool,
+          caller: client.user,
+          callerSocketId: socket.id
         });
+
+        const callerName = client.user;
+        if (shuffleFallbackTimeout) clearTimeout(shuffleFallbackTimeout);
+        shuffleFallbackTimeout = setTimeout(() => {
+          if (gameState.isShuffleRunning && (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT')) {
+            lockTileForHostConfirmation(chosenTarget.catIdx, chosenTarget.valIdx, callerName);
+          }
+        }, 5750);
         break;
       }
 
@@ -579,15 +644,32 @@ io.on('connection', (socket) => {
             if (gameState.phase !== 'HOST_CONFIRM' || !gameState.pendingHostClue) return;
             if (!payload?.confirmed) {
               gameState.pendingHostClue = null;
-              gameState.phase = 'SELECTION';
-              gameState.selectionTimerRunning = Boolean(gameState.selectionTimerWasRunning);
+              gameState.isShuffleRunning = false;
+              // Restore SELECTION_TIMEOUT if timer was already at 0s when tile was picked
+              if (gameState.selectionTimer <= 0) {
+                gameState.phase = 'SELECTION_TIMEOUT';
+                gameState.selectionTimerRunning = false;
+              } else {
+                gameState.phase = 'SELECTION';
+                gameState.selectionTimerRunning = Boolean(gameState.selectionTimerWasRunning);
+              }
               addServerLog(`[HOST ABORT] Tile rejected. Selection timer ${gameState.selectionTimerRunning ? 'resumed' : 'kept paused'} at ${gameState.selectionTimer}s.`);
               broadcastState();
               return;
             }
 
-            gameState.activeClue = { ...gameState.pendingHostClue };
+            const { catIdx, clueIdx } = gameState.pendingHostClue;
+            const fullClue = authoritativeDeck[catIdx].clues[clueIdx];
+
+            gameState.activeClue = {
+              catIdx,
+              clueIdx,
+              value: fullClue.value,
+              q: fullClue.q,
+              type: fullClue.type || 'text'
+            };
             gameState.pendingHostClue = null;
+            gameState.isShuffleRunning = false;
             gameState.turnSubmittingTeam = gameState.selectingTeam;
             gameState.isStealPhase = false;
             gameState.isTacticalGambleUsed = false;
@@ -595,17 +677,18 @@ io.on('connection', (socket) => {
             gameState.liveDraft = { author: "", text: "" };
             gameState.lockedSubmission = null;
 
-            addServerLog(`[CLUE BROADCAST] ${authoritativeDeck[gameState.activeClue.catIdx].category} $${gameState.activeClue.value} confirmed by Host.`);
+            addServerLog(`[CLUE BROADCAST] ${authoritativeDeck[catIdx].category} $${fullClue.value} confirmed by Host.`);
 
             if (gameState.activeClue.type === 'audio' || gameState.activeClue.type === 'image') {
               startServerMediaSequence();
             } else {
-              startServerArcadeCountdown();
+              startServerArcadeCountdown(true);
             }
             break;
           }
 
           case 'TOGGLE_SELECTION_TIMER': {
+            if (gameState.isShuffleRunning) return;
             const start = Boolean(payload?.start);
             gameState.selectionTimerRunning = start;
             if (start && gameState.phase === 'SELECTION_TIMEOUT') {
@@ -618,6 +701,8 @@ io.on('connection', (socket) => {
           }
 
           case 'FORFEIT_SELECTION': {
+            clearPhaseTimers();
+            gameState.isShuffleRunning = false;
             gameState.selectingTeam = gameState.selectingTeam === 'blue' ? 'red' : 'blue';
             gameState.selectionTimer = 20;
             gameState.selectionTimerRunning = false;
@@ -629,6 +714,8 @@ io.on('connection', (socket) => {
           }
 
           case 'TOGGLE_THINKING_TIMER': {
+            if (!['THINKING', 'STEAL_THINKING', 'TYPING', 'STEAL_TYPING'].includes(gameState.phase)) return;
+            if (gameState.timer <= 0) return;
             const start = Boolean(payload?.start);
             gameState.timerRunning = start;
             gameState.isPaused = false;
@@ -638,6 +725,8 @@ io.on('connection', (socket) => {
           }
 
           case 'PROCEED_TO_TYPING': {
+            if (!gameState.activeClue) return;
+            clearPhaseTimers();
             gameState.phase = gameState.isStealPhase ? 'STEAL_TYPING' : 'TYPING';
             gameState.timer = 15;
             gameState.timerRunning = true;
@@ -647,6 +736,7 @@ io.on('connection', (socket) => {
           }
 
           case 'FORCE_TIMEOUT_ANSWER': {
+            if (!gameState.activeClue) return;
             gameState.lockedSubmission = {
               team: gameState.turnSubmittingTeam,
               player: "SYSTEM_TIMEOUT",
@@ -737,12 +827,13 @@ io.on('connection', (socket) => {
             gameState.isStealPhase = false;
             gameState.isTacticalGambleUsed = false;
             gameState.challengerTeam = null;
+            gameState.isShuffleRunning = false;
             gameState.phase = 'SELECTION';
             gameState.selectionTimer = 20;
             gameState.selectionTimerRunning = false;
             gameState.selectionTimerWasRunning = false;
             addServerLog(`[HOST] Active clue aborted by Host. Returned to board.`);
-            broadcastState();
+            broadcastState('stop_audio');
             break;
           }
 
@@ -778,7 +869,7 @@ io.on('connection', (socket) => {
             gameState.isTacticalGambleUsed = false;
             gameState.challengerTeam = null;
             addServerLog(`[UNDO] Host reverted clue back to 60s Thinking phase.`);
-            broadcastState();
+            broadcastState('stop_audio', false, true);
             break;
           }
 
@@ -802,6 +893,7 @@ io.on('connection', (socket) => {
 
           case 'END_MATCH': {
             clearPhaseTimers();
+            gameState.isShuffleRunning = false;
             gameState.phase = 'GAME_OVER';
             gameState.timerRunning = false;
             gameState.selectionTimerRunning = false;
@@ -816,7 +908,7 @@ io.on('connection', (socket) => {
             gameState = createInitialGameState();
             rebuildRoster();
             gameState.logs = ["[RESET] Match rebooted by Host. Board restored."];
-            broadcastState();
+            broadcastState('stop_audio');
             break;
           }
 
@@ -837,7 +929,7 @@ io.on('connection', (socket) => {
               }));
               addServerLog(`[DECK] Clue deck updated and synchronized across all terminals.`);
             }
-            broadcastState('correct', true);
+            broadcastState('correct', true, true);
             break;
           }
 
@@ -873,5 +965,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`MS-DOS Defrag Jeopardy v4.0 Server online on port ${PORT}`);
+  console.log(`MS-DOS Defrag Jeopardy v4.0.2 Server online on port ${PORT}`);
 });
