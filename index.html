@@ -44,7 +44,7 @@
       position: fixed;
       top: 0; left: 0; bottom: 0; right: 0;
       background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-      z-index: 99;
+      z-index: 100;
       background-size: 100% 3px, 3px 100%;
       pointer-events: none;
       opacity: 0.6;
@@ -138,11 +138,10 @@
     <div class="flex items-center space-x-3 sm:space-x-4">
       <span class="hover:bg-black hover:text-[#B0B0B0] px-1 cursor-pointer" onclick="openDeckModal()"><span class="text-red-700">M</span>ain Menu</span>
       <span class="hover:bg-black hover:text-[#B0B0B0] px-1 cursor-pointer" onclick="triggerHostPause()"><span class="text-red-700">S</span>ystem [PAUSE: F2]</span>
-      <span class="text-blue-900 bg-blue-200 px-1.5 py-0.5 border border-blue-900 font-mono">ROOM: #DEFRAG-40</span>
+      <span id="netStatusBadge" class="text-blue-900 bg-blue-200 px-1.5 py-0.5 border border-blue-900 font-mono">ROOM: #DEFRAG-40</span>
       <span class="hidden md:inline text-black">SECTORS: <span id="headerTilesLeft" class="text-blue-900">30/30</span></span>
     </div>
 
-    <!-- Active View Switcher / Session Badge / Host & Spectator Readouts -->
     <div class="flex items-center space-x-2 sm:space-x-3 text-xs">
       <span class="bg-black text-yellow-300 px-2 py-0.5 border border-yellow-400 font-mono">HOST: <span id="headerHostName">None</span></span>
       <span class="bg-black text-green-300 px-2 py-0.5 border border-green-400 font-mono">SPECS: <span id="headerSpectatorCount">0</span></span>
@@ -166,7 +165,7 @@
         <span id="turnTimerBadge" class="text-yellow-300 font-mono font-bold ml-1 sm:ml-2">[ 20s PAUSED ]</span>
       </div>
 
-      <!-- Minimized Clue Floating Indicator (Visible if Clue Stage is Minimized) -->
+      <!-- Minimized Clue Floating Indicator -->
       <div id="minimizedClueBanner" class="hidden items-center space-x-2 bg-yellow-400 text-black px-2 py-0.5 border border-black font-bold font-mono text-xs">
         <span>ACTIVE CLUE: <span id="minimizedClueTitle">--</span></span>
         <button onclick="toggleClueMinimize(false)" class="bg-black text-yellow-300 px-1.5 py-0.2 hover:bg-gray-800">[ 🗖 EXPAND CLUE ]</button>
@@ -179,9 +178,7 @@
       </div>
     </div>
 
-    <!-- ======================================================== -->
-    <!-- VIEW A: MAIN INTERACTIVE BOARD VIEW                      -->
-    <!-- ======================================================== -->
+    <!-- VIEW A: MAIN INTERACTIVE BOARD VIEW -->
     <div id="viewBoard" class="flex flex-col gap-2 flex-1">
       
       <!-- TOP SCORE & MATCH TELEMETRY -->
@@ -208,7 +205,7 @@
           </div>
         </div>
 
-        <!-- CENTER STAKES & CLOCK TELEMETRY (DYNAMIC TIMELINE MONITOR) -->
+        <!-- CENTER STAKES & CLOCK TELEMETRY -->
         <div class="dos-box p-2 flex flex-col justify-center items-center text-center bg-[#000068] border-yellow-300">
           <div class="text-xs text-yellow-300 font-bold">── TIMELINE MONITOR ──</div>
           <div id="boardPhaseClock" class="text-3xl sm:text-4xl font-mono font-bold text-white my-0.5">00:20</div>
@@ -248,7 +245,7 @@
         <div id="boardTilesGrid" class="grid grid-cols-6 gap-1 sm:gap-2 flex-1 font-mono text-center"></div>
       </div>
 
-      <!-- PERSISTENT DIRECT INPUT BAR (SYNCED WITH POPUP INPUT) -->
+      <!-- PERSISTENT DIRECT INPUT BAR -->
       <div id="persistentInputContainer" class="dos-box p-2 bg-[#000078] transition-colors border-cyan-400">
         <div class="flex justify-between items-center text-xs text-yellow-300 font-bold border-b border-cyan-400 pb-1 mb-1.5">
           <span id="persistentBarTitle">─ SQUADRON TRANSMISSION TERMINAL ─</span>
@@ -269,6 +266,12 @@
           <button onclick="submitAnswerFromAnywhere()" id="btnPersistentSubmit" disabled class="dos-btn dos-btn-green py-2 px-4 text-xs font-bold whitespace-nowrap">
             [ ↵ SUBMIT ANSWER ]
           </button>
+          
+          <!-- RANDOM SCAN BUTTON -->
+          <button onclick="triggerRandomTileScan()" id="btnPersistentShuffle" class="dos-btn dos-btn-yellow py-2 px-3 text-xs font-bold whitespace-nowrap hidden">
+            [ 🎲 RANDOM SCAN ]
+          </button>
+
           <button onclick="playerTriggerSkipThinking()" id="btnPersistentSkip" class="dos-btn dos-btn-yellow py-2 px-3 text-xs font-bold whitespace-nowrap hidden">
             [ ⏩ READY TO ANSWER ]
           </button>
@@ -310,10 +313,8 @@
       </div>
     </div>
 
-    <!-- ======================================================== -->
-    <!-- VIEW B: SIMPLIFIED DYNAMIC HOST CONTROL PANEL (PIN: 1337) -->
-    <!-- ======================================================== -->
-    <div id="viewHost" class="hidden flex-col gap-3 flex-1">
+    <!-- VIEW B: SIMPLIFIED DYNAMIC HOST CONTROL PANEL -->
+    <div id="viewHost" class="hidden flex-col gap-3 flex-1 mt-2">
       
       <!-- DYNAMIC HOST COMMAND CONSOLE -->
       <div class="dos-box p-3 bg-[#000060] border-yellow-300">
@@ -339,7 +340,7 @@
       <!-- PERMANENT HOST UTILITIES & SCORE OVERRIDE -->
       <div class="dos-box p-3 bg-[#000078] border-cyan-400">
         <div class="text-yellow-300 font-bold text-xs border-b border-cyan-400 pb-1 mb-2 flex justify-between">
-          <span>─ PERMANENT MATCH OVERRIDES & CONTROLS ─</span>
+          <span>─ PERMANENT MATCH OVERRIDES &amp; CONTROLS ─</span>
           <span class="text-gray-300 text-[11px]">MANUAL OVERRIDE DESK</span>
         </div>
 
@@ -390,12 +391,12 @@
     </div>
   </main>
 
-  <!-- ======================================================== -->
-  <!-- 3. RETRO MODALS & OVERLAYS                               -->
-  <!-- ======================================================== -->
+  <!-- ========================================== -->
+  <!-- 3. RETRO MODALS & OVERLAYS                 -->
+  <!-- ========================================== -->
 
   <!-- MODAL 1: 5-SECOND TACTICAL CHALLENGE POPUP BANNER -->
-  <div id="modalTacticalBanner" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 hidden">
+  <div id="modalTacticalBanner" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-[60] hidden">
     <div class="dos-box-red max-w-xl w-full p-4 sm:p-6 bg-[#320008] text-center shadow-2xl animate-pulse">
       <div class="text-red-400 font-mono text-sm sm:text-base font-bold mb-2">
         ╔═══════════════════════════════════════════════════════════╗<br>
@@ -444,11 +445,10 @@
     </div>
   </div>
 
-  <!-- MODAL 3: INTERACTIVE CLUE STAGE OVERLAY (SELF-CONTAINED ARENA) -->
+  <!-- MODAL 3: INTERACTIVE CLUE STAGE OVERLAY -->
   <div id="modalClueStage" class="fixed inset-0 bg-black/90 flex items-center justify-center p-2 sm:p-5 z-40 hidden">
     <div class="dos-box max-w-4xl w-full p-3 sm:p-5 bg-[#0000A8] flex flex-col justify-between max-h-[95vh] overflow-y-auto">
       
-      <!-- STAGE HEADER WITH MINIMIZE / ABORT CONTROLS -->
       <div class="flex flex-wrap justify-between items-center border-b-2 border-cyan-400 pb-2 mb-2 sm:mb-3 gap-2">
         <div>
           <span id="stageCategoryName" class="text-cyan-300 font-bold text-sm sm:text-base">CATEGORY NAME</span>
@@ -459,22 +459,18 @@
           <span id="stagePhaseBadge" class="text-xs bg-yellow-300 text-black font-bold px-2 py-0.5 uppercase">3-2-1 READY</span>
           <span id="stageTimerClock" class="text-xl sm:text-2xl font-mono font-bold text-white">00:60</span>
           
-          <!-- Minimize & Abort Buttons -->
           <button onclick="toggleClueMinimize(true)" class="dos-btn px-2 py-0.5 text-xs text-yellow-300" title="Minimize to view board below">[ 🗕 MINIMIZE ]</button>
           <button onclick="hostAbortClueFromModal()" id="btnHostAbortClue" class="dos-btn dos-btn-red px-2 py-0.5 text-xs hidden" title="Cancel clue and return to board">[ ✕ ABORT CLUE ]</button>
         </div>
       </div>
 
-      <!-- 3-2-1-GO ARCADE COUNTDOWN LAYER -->
       <div id="stageArcadeCountdown" class="my-6 text-center py-6">
         <div id="arcadeBigNumber" class="text-6xl sm:text-8xl font-mono font-bold text-yellow-300 pulse-arcade tracking-widest">3</div>
         <div class="text-xs sm:text-sm text-cyan-300 mt-3 tracking-widest">SYNCHRONIZING TERMINALS...</div>
       </div>
 
-      <!-- CLUE CONTENT & INTERACTIVE ARENA LAYER -->
       <div id="stageContentLayer" class="hidden flex-col gap-3 my-1">
         
-        <!-- MEDIA WRAPPER -->
         <div id="stageMediaContainer" class="hidden flex-col items-center justify-center border-2 border-cyan-300 p-2 bg-[#000060]">
           <img id="stageClueImage" src="" alt="Clue Photo" class="max-h-52 object-contain border border-white mb-2 hidden">
           <div id="stageClueAudioWrapper" class="w-full text-center hidden">
@@ -495,7 +491,6 @@
           </div>
         </div>
 
-        <!-- MAIN QUESTION TEXT -->
         <div class="p-3 sm:p-4 bg-[#000078] border-2 border-white text-center font-mono">
           <div class="text-xs text-yellow-300 mb-1 font-bold">── CLUE TRANSCRIPT ──</div>
           <div id="stageCluePrompt" class="text-base sm:text-xl font-bold text-white leading-relaxed">
@@ -503,11 +498,11 @@
           </div>
         </div>
 
-        <!-- DIRECT PLAYER INPUT SECTION (INSIDE THE POPUP!) -->
+        <!-- DIRECT PLAYER INPUT SECTION -->
         <div class="dos-box p-2 bg-[#000060] border-cyan-400">
           <div class="flex justify-between text-xs text-yellow-300 border-b border-cyan-700 pb-1 mb-1 font-mono">
             <span id="modalInputSquadTitle">SQUADRON INPUT:</span>
-            <span id="modalInputDraftBadge" class="text-red-400 animate-pulse font-bold">● LIVE TEAM DRAFT</span>
+            <span id="modalInputDraftBadge" class="text-red-400 animate-pulse font-bold hidden">● LIVE TEAM DRAFT</span>
           </div>
           <div class="text-xs text-cyan-300 mb-1 truncate font-mono">
             &gt; <span id="modalDraftAuthor">Drafting:</span> <span id="modalDraftText" class="text-white font-bold">...</span><span class="dos-cursor"></span>
@@ -527,7 +522,7 @@
           </div>
         </div>
 
-        <!-- DIRECT HOST COMMAND SECTION (INSIDE THE POPUP!) -->
+        <!-- DIRECT HOST COMMAND SECTION -->
         <div id="modalHostCommandSection" class="p-2.5 bg-black border border-yellow-400 font-mono text-xs hidden">
           <div class="text-yellow-300 font-bold border-b border-gray-700 pb-1 mb-2 flex justify-between">
             <span>👑 HOST COMMAND DESK (POPUP CONTROLS)</span>
@@ -537,19 +532,18 @@
             <button onclick="hostToggleThinkingTimer(!gameState.timerRunning)" class="dos-btn dos-btn-green px-2.5 py-1 font-bold" id="btnModalHostPlayPause">
               [ ▶ START 60s TIMER ]
             </button>
-            <button onclick="hostProceedToTyping()" class="dos-btn dos-btn-yellow px-2 py-1">[ ⚡ FORCE 15s TYPING ]</button>
+            <button onclick="hostProceedToTyping()" id="btnModalHostForceTyping" class="dos-btn dos-btn-yellow px-2 py-1">[ ⚡ FORCE 15s TYPING ]</button>
             <button onclick="hostAddSeconds(10)" class="dos-btn px-2 py-1">[ +10s TIME ]</button>
             <div class="border-l border-gray-600 pl-2 flex gap-1.5">
-              <button onclick="hostAwardVerdict(true)" class="dos-btn dos-btn-green px-2.5 py-1 font-bold">[ ✅ CORRECT ]</button>
-              <button onclick="hostAwardVerdict(false)" class="dos-btn dos-btn-red px-2.5 py-1 font-bold">[ ❌ INCORRECT ]</button>
-              <button onclick="triggerHostVoidSubmission()" class="dos-btn dos-btn-yellow px-2 py-1">[ ↩ VOID ]</button>
+              <button onclick="hostAwardVerdict(true)" id="btnModalHostCorrect" class="dos-btn dos-btn-green px-2.5 py-1 font-bold">[ ✅ CORRECT ]</button>
+              <button onclick="hostAwardVerdict(false)" id="btnModalHostIncorrect" class="dos-btn dos-btn-red px-2.5 py-1 font-bold">[ ❌ INCORRECT ]</button>
+              <button onclick="triggerHostVoidSubmission()" id="btnModalHostVoid" class="dos-btn dos-btn-yellow px-2 py-1">[ ↩ VOID ]</button>
             </div>
           </div>
         </div>
 
       </div>
 
-      <!-- STAGE FOOTER -->
       <div class="border-t border-cyan-400 pt-2 flex flex-wrap justify-between items-center text-xs text-gray-300 gap-2 mt-2">
         <div>ACTIVE SQUAD: <span id="stageActiveSquad" class="text-yellow-300 font-bold uppercase">TEAM BLUE</span></div>
         <div id="stageTacticalWarning" class="text-red-400 font-bold"></div>
@@ -562,13 +556,13 @@
   <div id="modalLobby" class="fixed inset-0 bg-black/90 flex items-center justify-center p-3 sm:p-4 z-50 hidden">
     <div class="dos-box-yellow max-w-md w-full p-4 sm:p-5 bg-[#0000A8]">
       <div class="text-yellow-300 font-bold text-center border-b-2 border-yellow-400 pb-1 text-sm sm:text-base mb-3">
-        ╔══ SELECT MATCH TERMINAL & ROLE ══╗
+        ╔══ SELECT MATCH TERMINAL &amp; ROLE ══╗
       </div>
 
       <div class="space-y-3 font-mono text-xs">
         <div>
           <span class="text-gray-200">YOUR CALLSIGN / NAME:</span>
-          <input type="text" id="lobbyPlayerNameInput" value="Operator_1" class="bg-black text-cyan-300 border-2 border-cyan-400 p-2 font-mono text-sm w-full mt-1 focus:outline-none">
+          <input type="text" id="lobbyPlayerNameInput" value="" maxlength="28" class="bg-black text-cyan-300 border-2 border-cyan-400 p-2 font-mono text-sm w-full mt-1 focus:outline-none">
         </div>
 
         <div class="text-gray-300 pt-1">CHOOSE TERMINAL ASSIGNMENT:</div>
@@ -599,15 +593,16 @@
           </div>
         </div>
 
-        <div class="text-[10px] text-gray-400 border-t border-gray-700 pt-2">
-          Note: You can switch between teams freely anytime.
+        <div class="text-[10px] text-gray-400 border-t border-gray-700 pt-2 flex justify-between items-center">
+          <span>Note: You can switch between teams freely anytime.</span>
+          <button onclick="closeLobbyModal()" class="text-cyan-300 hover:underline">[ ESC: CLOSE ]</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 5: BRUTE FORCE LOCKOUT DIALOG -->
-  <div id="modalNahUhLockout" class="fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-50 hidden">
+  <!-- MODAL 5: BRUTE FORCE LOCKOUT DIALOG (FIXED CLOSING BUTTON TAG) -->
+  <div id="modalNahUhLockout" class="fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-[70] hidden">
     <div class="dos-box-red max-w-md w-full p-5 bg-[#000078] text-center font-mono">
       <div class="text-red-400 font-bold border-b-2 border-red-500 pb-1 text-sm mb-3">
         [!] SECURITY VIOLATION: AUTHENTICATION FAILED (3/3)
@@ -626,7 +621,7 @@
   </div>
 
   <!-- MODAL 6: MESSAGE MODAL -->
-  <div id="modalDosMessage" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 hidden">
+  <div id="modalDosMessage" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-[70] hidden">
     <div class="dos-box-yellow max-w-sm w-full p-4 bg-[#0000A8] text-center font-mono text-xs">
       <div id="dosMessageTitle" class="text-yellow-300 font-bold border-b border-yellow-400 pb-1 mb-2">SYSTEM NOTICE</div>
       <div id="dosMessageBody" class="text-gray-200 my-3 leading-relaxed">Notification text</div>
@@ -636,15 +631,15 @@
     </div>
   </div>
 
-  <!-- MODAL 7: DECK MANAGER -->
+  <!-- MODAL 7: DECK MANAGER (HOST-PROTECTED & FILE UPLOAD ENABLED) -->
   <div id="modalDeckManager" class="fixed inset-0 bg-black/90 flex items-center justify-center p-2 sm:p-4 z-50 hidden">
     <div class="dos-box-yellow max-w-4xl w-full p-4 bg-[#0000A8] max-h-[92vh] flex flex-col justify-between">
       <div class="flex justify-between items-center border-b-2 border-yellow-400 pb-1 mb-2">
-        <span class="text-yellow-300 font-bold text-sm sm:text-base">╔══ CLUE DECK MANAGER [FAT TABLE] ══╗</span>
+        <span class="text-yellow-300 font-bold text-sm sm:text-base">╔══ CLUE DECK MANAGER [FAT TABLE - HOST ONLY] ══╗</span>
         <button onclick="closeDeckModal()" class="text-red-400 font-bold hover:text-white text-xs">[ ESC: CLOSE ]</button>
       </div>
       <div class="flex flex-wrap gap-2 justify-between items-center text-xs mb-2 bg-[#000078] p-2 border border-cyan-400 font-mono">
-        <div>Configure categories, prompts, secret answers & media URLs.</div>
+        <div>Configure categories, prompts, secret answers &amp; media assets.</div>
         <div class="flex space-x-2">
           <button onclick="exportDeckToJson()" class="dos-btn dos-btn-yellow px-2 py-0.5">[ 💾 EXPORT JSON ]</button>
           <label class="dos-btn px-2 py-0.5 cursor-pointer">
@@ -659,7 +654,7 @@
       <div class="border-t border-cyan-400 pt-2 mt-2 flex justify-between items-center text-xs">
         <span class="text-gray-400">Total Sectors: 30 / 30</span>
         <button onclick="saveAndApplyDeckChanges()" class="dos-btn dos-btn-green px-4 py-1.5 font-bold">
-          [ 💾 SAVE & APPLY DECK TO GAME ]
+          [ 💾 SAVE &amp; APPLY DECK TO GAME ]
         </button>
       </div>
     </div>
@@ -688,7 +683,7 @@
       <div id="victoryWinnerBanner" class="text-2xl sm:text-3xl font-bold text-white mb-2">CHAMPION: TEAM BLUE</div>
       <div id="victoryFinalScores" class="text-base sm:text-lg text-cyan-300 mb-3">FINAL ASSETS: BLUE: $0  │  RED: $0</div>
       <div class="flex justify-center space-x-3">
-        <button onclick="triggerHostResetMatch(); closeVictoryModal();" class="dos-btn dos-btn-yellow px-5 py-1.5 font-bold">
+        <button id="btnVictoryReset" onclick="triggerHostResetMatch(); closeVictoryModal();" class="dos-btn dos-btn-yellow px-5 py-1.5 font-bold hidden">
           [ 🔄 PLAY AGAIN (RESET) ]
         </button>
         <button onclick="closeVictoryModal()" class="dos-btn px-4 py-1.5">[ CLOSE BANNER ]</button>
@@ -718,13 +713,40 @@
   <!-- ========================================== -->
   <script>
     /* -------------------------------------------------------------
-       AUDIO SYNTHESIZER
+       AUDIO SYNTHESIZER & EXTERNAL MEDIA PLAYER
     -------------------------------------------------------------- */
     let audioCtx = null;
     let isSoundMuted = false;
+    let externalAudioPlayer = null;
+    let activeClueMediaCache = '';
 
     function initAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    }
+
+    function unlockBrowserAudioOnGesture() {
+      try {
+        initAudio();
+        if (externalAudioPlayer && externalAudioPlayer.paused && !isSoundMuted && !gameState.isPaused && gameState.phase === 'MEDIA_PLAYING') {
+          externalAudioPlayer.play().catch(() => {});
+        }
+      } catch (e) {}
+    }
+    window.addEventListener('pointerdown', unlockBrowserAudioOnGesture, { passive: true });
+    window.addEventListener('keydown', unlockBrowserAudioOnGesture, { passive: true });
+    window.addEventListener('touchstart', unlockBrowserAudioOnGesture, { passive: true });
+
+    function stopExternalAudio() {
+      if (externalAudioPlayer) {
+        try {
+          externalAudioPlayer.pause();
+          externalAudioPlayer.src = '';
+        } catch (e) {}
+        externalAudioPlayer = null;
+      }
     }
 
     function playTone(freq, duration = 0.08, type = 'square', gainVal = 0.1) {
@@ -771,100 +793,67 @@
     };
     window.toggleAudioMute = function() {
       isSoundMuted = !isSoundMuted;
+      if (externalAudioPlayer) externalAudioPlayer.muted = isSoundMuted;
       document.getElementById('muteBtn').innerText = isSoundMuted ? '[ 🔇 AUDIO: OFF ]' : '[ 🔊 AUDIO: ON ]';
     };
 
     /* -------------------------------------------------------------
-       DEFAULT DECK CONFIGURATION
+       PUBLIC DECK STRUCTURE
     -------------------------------------------------------------- */
-    const DEFAULT_DECK = [
-      {
-        category: "RETRO COMPUTING",
-        clues: [
-          { value: 200, type: "text", q: "What does the 'DOS' in MS-DOS stand for?", a: "Disk Operating System" },
-          { value: 400, type: "text", q: "This classic DOS command displays the files and folders in the current directory.", a: "DIR" },
-          { value: 600, type: "text", q: "In conventional MS-DOS architecture, conventional RAM was famously capped at this amount.", a: "640 KB" },
-          { value: 800, type: "text", q: "Alongside CONFIG.SYS, this batch file ran automatically every time an MS-DOS machine booted.", a: "AUTOEXEC.BAT" },
-          { value: 1000, type: "text", q: "Which computer pioneer created Norton Utilities, Norton Commander, and the famous Speed Disk defragmenter?", a: "Peter Norton" }
-        ]
-      },
-      {
-        category: "WORLD GEOGRAPHY",
-        clues: [
-          { value: 200, type: "text", q: "What is the capital city of France?", a: "Paris" },
-          { value: 400, type: "text", q: "This North African country borders both the Mediterranean Sea and the Atlantic Ocean.", a: "Morocco" },
-          { value: 600, type: "text", q: "What is the largest hot desert in the world, stretching across North Africa?", a: "Sahara Desert" },
-          { value: 800, type: "text", q: "Mount Kilimanjaro, Africa's highest free-standing mountain, is located in which nation?", a: "Tanzania" },
-          { value: 1000, type: "text", q: "Which island country is also designated as an entire continent?", a: "Australia" }
-        ]
-      },
-      {
-        category: "CINEMA ICONS",
-        clues: [
-          { value: 200, type: "text", q: "Which 1999 sci-fi movie features red pills, blue pills, and agent Smith?", a: "The Matrix" },
-          { value: 400, type: "image", mediaUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80", q: "Identify the sci-fi franchise and weapon type depicted in this glowing energy blade.", a: "Lightsaber / Star Wars" },
-          { value: 600, type: "text", q: "Who directed 'Inception', 'Interstellar', and 'Oppenheimer'?", a: "Christopher Nolan" },
-          { value: 800, type: "text", q: "In Pulp Fiction, what fictional Hawaiian-themed fast-food burger does Jules taste?", a: "Big Kahuna Burger" },
-          { value: 1000, type: "text", q: "Which film won the Best Picture Academy Award in 1994, beating The Shawshank Redemption and Pulp Fiction?", a: "Forrest Gump" }
-        ]
-      },
-      {
-        category: "SYNTH & AUDIO",
-        clues: [
-          { value: 200, type: "audio", mediaUrl: "synth:c_major_scale", q: "Listen to the synthetic frequency sequence. Identify the foundational musical scale being played.", a: "C Major Scale" },
-          { value: 400, type: "audio", mediaUrl: "synth:80s_arpeggio", q: "Listen to this chiptune progression. Which decade revolutionized this 8-bit sound in arcades?", a: "1980s" },
-          { value: 600, type: "text", q: "Established in 1983, this acronym represents the universal electronic instrument communication standard.", a: "MIDI" },
-          { value: 800, type: "text", q: "Which electronics company introduced the world-famous Walkman portable cassette player in 1979?", a: "Sony" },
-          { value: 1000, type: "text", q: "What was the legendary 3-voice sound synthesis chip that powered the Commodore 64?", a: "SID (MOS Technology 6581)" }
-        ]
-      },
-      {
-        category: "SCIENCE & NATURE",
-        clues: [
-          { value: 200, type: "text", q: "What chemical element has the atomic number 8 and the symbol 'O'?", a: "Oxygen" },
-          { value: 400, type: "text", q: "Approximately what is the speed of light in vacuum in kilometers per second?", a: "300,000 km/s (299,792 km/s)" },
-          { value: 600, type: "text", q: "Which gas makes up roughly 78 percent of Earth's atmosphere?", a: "Nitrogen" },
-          { value: 800, type: "text", q: "What subatomic particle carries a negative electrical charge and orbits the atomic nucleus?", a: "Electron" },
-          { value: 1000, type: "text", q: "Often termed the 'powerhouse of the cell', which organelle produces ATP?", a: "Mitochondria" }
-        ]
-      },
-      {
-        category: "GAMING LEGENDS",
-        clues: [
-          { value: 200, type: "text", q: "What color is Nintendo's plumber hero Mario's cap and shirt?", a: "Red" },
-          { value: 400, type: "text", q: "In 1993, id Software sparked a revolution in PC gaming by unleashing this demonic FPS.", a: "DOOM" },
-          { value: 600, type: "text", q: "What is the name of the green-clad protagonist in Nintendo's The Legend of Zelda?", a: "Link" },
-          { value: 800, type: "text", q: "In Minecraft, what indestructible block is generated when running water touches lava source blocks?", a: "Obsidian" },
-          { value: 1000, type: "text", q: "Released in 1972 by Ralph Baer, what was the first commercial home video game console?", a: "Magnavox Odyssey" }
-        ]
-      }
+    const FALLBACK_PUBLIC_DECK = [
+      { category: "RETRO COMPUTING", clues: [200, 400, 600, 800, 1000].map(v => ({ value: v, type: "text" })) },
+      { category: "WORLD GEOGRAPHY", clues: [200, 400, 600, 800, 1000].map(v => ({ value: v, type: "text" })) },
+      { category: "CINEMA ICONS", clues: [200, 400, 600, 800, 1000].map(v => ({ value: v, type: v === 400 ? "image" : "text" })) },
+      { category: "SYNTH & AUDIO", clues: [200, 400, 600, 800, 1000].map(v => ({ value: v, type: v <= 400 ? "audio" : "text" })) },
+      { category: "SCIENCE & NATURE", clues: [200, 400, 600, 800, 1000].map(v => ({ value: v, type: "text" })) },
+      { category: "GAMING LEGENDS", clues: [200, 400, 600, 800, 1000].map(v => ({ value: v, type: "text" })) }
     ];
 
     /* -------------------------------------------------------------
        STATE MANAGEMENT & MULTI-DEVICE SOCKET ENGINE
     -------------------------------------------------------------- */
-    const socket = (typeof io !== 'undefined') ? io() : null;
+    const socket = (typeof io !== 'undefined') ? io({
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000
+    }) : null;
 
+    const hasSavedRole = Boolean(localStorage.getItem('dos_player_role'));
     let myRole = localStorage.getItem('dos_player_role') || 'board';
     let myPlayerName = localStorage.getItem('dos_player_name') || ("Operator_" + Math.floor(100 + Math.random() * 900));
-    let hostPin = '1337';
-    let isHostAuthenticated = (localStorage.getItem('dos_is_host') === 'true');
-    let isClueMinimized = false;
+    localStorage.setItem('dos_player_name', myPlayerName);
 
-    let gameDeck = JSON.parse(localStorage.getItem('dos_jeopardy_deck') || JSON.stringify(DEFAULT_DECK));
+    let isHostAuthenticated = (localStorage.getItem('dos_is_host') === 'true');
+    let savedHostPin = sessionStorage.getItem('dos_host_pin') || '';
+    let hostSecretAnswer = null;
+    let isClueMinimized = false;
+    let victoryDismissedForGame = false;
+    let isShuffleAnimating = false;
+    let activeShuffleHighlight = null;
+    let activeScanTimeout = null;
+    let activeBlinkInterval = null;
+    let lastBoardRenderSignature = '';
+    let lastHostActionSignature = '';
+
+    let gameDeck = JSON.parse(JSON.stringify(FALLBACK_PUBLIC_DECK));
+    let hostEditableDeck = null;
 
     let gameState = {
       scores: { blue: 0, red: 0 },
       selectingTeam: 'blue',
       selectionTimer: 20,
       selectionTimerRunning: false,
+      selectionTimerWasRunning: false,
+      isShuffleRunning: false,
       clearedClues: [],
-      phase: 'SELECTION', // 'SELECTION', 'SELECTION_TIMEOUT', 'HOST_CONFIRM', 'COUNTDOWN', 'MEDIA_PLAYING', 'THINKING', 'THINKING_TIMEOUT', 'TYPING', 'TYPING_TIMEOUT', 'STEAL_THINKING', 'STEAL_TYPING', 'HOST_JUDGING', 'GAME_OVER'
+      phase: 'SELECTION',
       activeClue: null,
       pendingHostClue: null,
       timer: 60,
       timerRunning: false,
       isPaused: false,
+      isStealPhase: false,
       isTacticalGambleUsed: false,
       challengerTeam: null,
       turnSubmittingTeam: null,
@@ -872,68 +861,242 @@
       lockedSubmission: null,
       lastSelectionAttribution: null,
       tacticalAlert: null,
+      arcadeCount: 3,
+      mediaProgress: 0,
       logs: ["[00:00:00] MS-DOS DEFRAG ENGINE v4.0 READY. Render Socket Online."],
       roster: { host: null, blue: [], red: [], spectators: [] }
     };
 
-    function syncState(broadcastSound = null) {
-      renderAll();
-      const payload = { type: 'STATE_UPDATE', state: gameState, sfx: broadcastSound };
+    function sendHostAction(action, payload = {}) {
+      if (!isHostAuthenticated || myRole !== 'host') return;
       if (socket && socket.connected) {
-        socket.emit('game_message', payload);
+        socket.emit('game_message', { type: 'HOST_ACTION', action, payload });
       }
+    }
+
+    function clearShuffleTimersAndStyles() {
+      if (activeScanTimeout) { clearTimeout(activeScanTimeout); activeScanTimeout = null; }
+      if (activeBlinkInterval) { clearInterval(activeBlinkInterval); activeBlinkInterval = null; }
+      if (activeShuffleHighlight) {
+        const prevEl = document.getElementById(`gridTile_${activeShuffleHighlight.catIdx}_${activeShuffleHighlight.valIdx}`);
+        if (prevEl) {
+          prevEl.style.backgroundColor = '';
+          prevEl.style.color = '';
+        }
+        activeShuffleHighlight = null;
+      }
+      isShuffleAnimating = false;
     }
 
     if (socket) {
       socket.on('connect', () => {
-        socket.emit('game_message', { type: 'ROSTER_JOIN', user: myPlayerName, role: myRole });
+        const badge = document.getElementById('netStatusBadge');
+        if (badge) {
+          badge.innerText = "ROOM: #DEFRAG-40 [ONLINE]";
+          badge.className = "text-blue-900 bg-blue-200 px-1.5 py-0.5 border border-blue-900 font-mono";
+        }
+        if (myRole === 'host' && isHostAuthenticated) {
+          socket.emit('game_message', {
+            type: 'ROSTER_JOIN',
+            user: myPlayerName,
+            role: 'host',
+            pin: savedHostPin || '1337'
+          });
+        } else {
+          if (myRole === 'host') myRole = 'board';
+          socket.emit('game_message', { type: 'ROSTER_JOIN', user: myPlayerName, role: myRole });
+        }
+      });
+
+      socket.on('disconnect', () => {
+        const badge = document.getElementById('netStatusBadge');
+        if (badge) {
+          badge.innerText = "ROOM: #DEFRAG-40 [RECONNECTING...]";
+          badge.className = "text-white bg-red-700 px-1.5 py-0.5 border border-yellow-300 font-mono animate-pulse";
+        }
       });
 
       socket.on('game_message', (data) => {
         if (!data) return;
-        if (data.type === 'STATE_UPDATE') {
-          gameState = data.state;
-          if (data.sfx === 'tactical') window.sfxTacticalAlert();
-          if (data.sfx === 'correct') window.sfxCorrect();
-          if (data.sfx === 'incorrect') window.sfxIncorrect();
-          if (data.sfx === 'victory') window.sfxVictory();
+
+        if (data.type === 'START_SHUFFLE_SCAN') {
+          executeShuffleAnimation(data);
+          return;
+        }
+
+        if (data.type === 'AUTH_RESULT') {
+          if (data.success) {
+            isHostAuthenticated = true;
+            localStorage.setItem('dos_is_host', 'true');
+            localStorage.setItem('dos_pin_failed_attempts', '0');
+            if (data.fullDeck) hostEditableDeck = data.fullDeck;
+            window.sfxCorrect();
+            closeLobbyModal();
+            applyRoleUI('host');
+          } else if (data.lockedUntil) {
+            isHostAuthenticated = false;
+            localStorage.removeItem('dos_is_host');
+            localStorage.setItem('dos_pin_lockout_until', String(data.lockedUntil));
+            window.sfxIncorrect();
+            checkPinLockoutActive();
+          } else {
+            isHostAuthenticated = false;
+            localStorage.removeItem('dos_is_host');
+            window.sfxIncorrect();
+            window.showDosModal("ACCESS DENIED", `Invalid Host Master PIN. Attempt ${data.attempts || 1} of 3 before lockout.`);
+          }
+          return;
+        }
+
+        if (data.type === 'DECK_SYNC') {
+          if (data.publicDeck) {
+            gameDeck = data.publicDeck;
+            lastBoardRenderSignature = '';
+          }
+          if (data.fullDeck) {
+            hostEditableDeck = data.fullDeck;
+            renderDeckEditor();
+          }
           renderAll();
+          return;
+        }
+
+        if (data.type === 'STATE_UPDATE') {
+          const prevPhase = gameState.phase;
+          const wasPaused = gameState.isPaused;
+          gameState = data.state;
+
+          if (data.publicDeck) {
+            gameDeck = data.publicDeck;
+            lastBoardRenderSignature = '';
+          }
+          if (data.fullDeck) hostEditableDeck = data.fullDeck;
+          if (typeof data.hostSecretAnswer !== 'undefined') {
+            hostSecretAnswer = data.hostSecretAnswer;
+          }
+          if (typeof data.activeClueMediaUrl === 'string') {
+            activeClueMediaCache = data.activeClueMediaUrl;
+          }
+          if (!gameState.activeClue) {
+            activeClueMediaCache = '';
+          }
+
+          if (isShuffleAnimating && !gameState.isShuffleRunning && gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') {
+            clearShuffleTimersAndStyles();
+          }
+
+          if (
+            data.sfx === 'stop_audio' ||
+            !gameState.activeClue ||
+            ['SELECTION', 'SELECTION_TIMEOUT', 'HOST_CONFIRM', 'GAME_OVER'].includes(gameState.phase)
+          ) {
+            stopExternalAudio();
+          } else if (externalAudioPlayer && wasPaused !== gameState.isPaused) {
+            if (gameState.isPaused) externalAudioPlayer.pause();
+            else if (!isSoundMuted) externalAudioPlayer.play().catch(() => {});
+          }
+
+          if (prevPhase !== 'GAME_OVER' && gameState.phase === 'GAME_OVER') {
+            victoryDismissedForGame = false;
+          }
+
+          if (data.sfx === 'tactical') window.sfxTacticalAlert();
+          else if (data.sfx === 'correct') { stopExternalAudio(); window.sfxCorrect(); }
+          else if (data.sfx === 'incorrect') window.sfxIncorrect();
+          else if (data.sfx === 'victory') { stopExternalAudio(); window.sfxVictory(); }
+          else if (data.sfx === 'countdown_tick') window.sfxCountdown(1);
+          else if (data.sfx === 'countdown_go') window.sfxCountdown(0);
+          else if (data.sfx === 'media_pulse') playTone(700, 0.03, 'sine', 0.04);
+          else if (data.sfx === 'grace_beep') playTone(520, 0.06, 'triangle', 0.08);
+          else if (data.sfx === 'play_clue_audio') synthesizeChiptuneAudio();
+
+          const isNowTyping = ['TYPING', 'STEAL_TYPING'].includes(gameState.phase);
+          const wasTyping = ['TYPING', 'STEAL_TYPING'].includes(prevPhase);
+
+          if (!isNowTyping) {
+            const pIn = document.getElementById('persistentAnswerInput');
+            const mIn = document.getElementById('modalStageAnswerInput');
+            if (pIn && pIn.value) pIn.value = '';
+            if (mIn && mIn.value) mIn.value = '';
+          }
+
+          renderAll();
+
+          if (isNowTyping && !wasTyping && myRole === gameState.turnSubmittingTeam && !gameState.lockedSubmission) {
+            const targetInput = isClueMinimized
+              ? document.getElementById('persistentAnswerInput')
+              : document.getElementById('modalStageAnswerInput');
+            if (targetInput && !targetInput.disabled) {
+              targetInput.focus();
+            }
+          }
         } else if (data.type === 'LIVE_KEY') {
           gameState.liveDraft = data.liveDraft;
+          if (myRole === gameState.turnSubmittingTeam && data.liveDraft && data.liveDraft.author !== myPlayerName) {
+            const pIn = document.getElementById('persistentAnswerInput');
+            const mIn = document.getElementById('modalStageAnswerInput');
+            if (pIn && document.activeElement !== pIn) pIn.value = data.liveDraft.text;
+            if (mIn && document.activeElement !== mIn) mIn.value = data.liveDraft.text;
+          }
           renderLiveTypingDrafts();
         }
       });
     }
 
+    setInterval(() => {
+      fetch('/healthz').catch(() => {});
+    }, 240000);
+
+    setInterval(() => {
+      const now = new Date();
+      const clockEl = document.getElementById('dosClock');
+      if (clockEl) clockEl.innerText = now.toTimeString().split(' ')[0];
+    }, 1000);
+
     window.resetClientSession = function() {
-      if (confirm("Reset callsign, role, and PIN lockout cache?")) {
-        localStorage.clear();
-        location.reload();
-      }
+      window.showDosModal(
+        "CONFIRM CACHE RESET",
+        "Reset local callsign, role, and PIN lockout cache?",
+        () => {
+          localStorage.clear();
+          sessionStorage.clear();
+          location.reload();
+        },
+        () => {}
+      );
     };
 
     /* -------------------------------------------------------------
        CUSTOM RETRO DOS MODAL DIALOGS
     -------------------------------------------------------------- */
+    let activeModalConfirmFn = null;
+    let activeModalCancelFn = null;
+
     window.showDosModal = function(title, body, onConfirm = null, onCancel = null) {
       document.getElementById('dosMessageTitle').innerText = title;
       document.getElementById('dosMessageBody').innerText = body;
       const actions = document.getElementById('dosMessageActions');
 
       if (onConfirm && onCancel) {
+        activeModalConfirmFn = () => { closeDosMessageModal(); onConfirm(); };
+        activeModalCancelFn = () => { closeDosMessageModal(); onCancel(); };
         actions.innerHTML = `
           <button id="modalBtnConfirm" class="dos-btn dos-btn-green px-4 py-1 text-xs font-bold">[ ENTER: CONFIRM ]</button>
           <button id="modalBtnCancel" class="dos-btn dos-btn-red px-4 py-1 text-xs font-bold">[ ESC: CANCEL ]</button>
         `;
-        document.getElementById('modalBtnConfirm').onclick = () => { closeDosMessageModal(); onConfirm(); };
-        document.getElementById('modalBtnCancel').onclick = () => { closeDosMessageModal(); onCancel(); };
+        document.getElementById('modalBtnConfirm').onclick = activeModalConfirmFn;
+        document.getElementById('modalBtnCancel').onclick = activeModalCancelFn;
       } else {
+        activeModalConfirmFn = closeDosMessageModal;
+        activeModalCancelFn = closeDosMessageModal;
         actions.innerHTML = `<button onclick="closeDosMessageModal()" class="dos-btn px-5 py-1 text-xs font-bold">[ OK ]</button>`;
       }
       document.getElementById('modalDosMessage').classList.remove('hidden');
     };
 
     window.closeDosMessageModal = function() {
+      activeModalConfirmFn = null;
+      activeModalCancelFn = null;
       document.getElementById('modalDosMessage').classList.add('hidden');
     };
 
@@ -956,25 +1119,8 @@
       switchViewRole('board');
     };
 
-    function registerFailedPinAttempt() {
-      let attempts = parseInt(localStorage.getItem('dos_pin_failed_attempts') || '0', 10) + 1;
-      localStorage.setItem('dos_pin_failed_attempts', attempts);
-
-      if (attempts >= 3) {
-        const lockUntil = Date.now() + 15 * 60 * 1000;
-        localStorage.setItem('dos_pin_lockout_until', lockUntil);
-        localStorage.setItem('dos_pin_failed_attempts', '0');
-        window.sfxIncorrect();
-        checkPinLockoutActive();
-        addEventLog("[SECURITY] Excessive host PIN failures. Terminal locked 15m.");
-      } else {
-        window.sfxIncorrect();
-        window.showDosModal("ACCESS DENIED", `Invalid Host Master PIN. Attempt ${attempts} of 3 before lockout.`);
-      }
-    }
-
     /* -------------------------------------------------------------
-       ROLE MANAGEMENT WITH ACCURATE SOCKET ROSTER REGISTRATION
+       ROLE MANAGEMENT
     -------------------------------------------------------------- */
     window.openLobbyModal = function() {
       window.sfxKeyClick();
@@ -988,28 +1134,27 @@
 
     window.joinRole = function(targetRole) {
       window.sfxKeyClick();
-      const enteredName = document.getElementById('lobbyPlayerNameInput').value.trim();
+      const nameInput = document.getElementById('lobbyPlayerNameInput');
+      const enteredName = nameInput ? nameInput.value.trim() : '';
       if (enteredName) {
-        myPlayerName = enteredName;
+        myPlayerName = enteredName.slice(0, 28);
         localStorage.setItem('dos_player_name', myPlayerName);
       }
 
       if (targetRole === 'host') {
         if (checkPinLockoutActive()) return;
         const pinEntered = document.getElementById('lobbyHostPinInput').value.trim();
-        if (pinEntered === hostPin) {
-          isHostAuthenticated = true;
-          localStorage.setItem('dos_is_host', 'true');
-          localStorage.setItem('dos_pin_failed_attempts', '0');
-          window.sfxCorrect();
-          closeLobbyModal();
-          switchViewRole('host');
-          addEventLog(`[AUTH] Host console accessed by ${myPlayerName}.`);
-          return;
-        } else {
-          registerFailedPinAttempt();
-          return;
+        savedHostPin = pinEntered || savedHostPin;
+        sessionStorage.setItem('dos_host_pin', savedHostPin);
+        if (socket && socket.connected) {
+          socket.emit('game_message', {
+            type: 'ROSTER_JOIN',
+            user: myPlayerName,
+            role: 'host',
+            pin: savedHostPin
+          });
         }
+        return;
       }
 
       localStorage.setItem('dos_player_role', targetRole);
@@ -1020,29 +1165,60 @@
     window.quickSwitchView = function(role) {
       if (role === 'host' && !isHostAuthenticated) {
         openLobbyModal();
+        const pinInput = document.getElementById('lobbyHostPinInput');
+        if (pinInput) pinInput.focus();
+      } else if (role === 'host' && isHostAuthenticated) {
+        if (socket && socket.connected) {
+          socket.emit('game_message', {
+            type: 'ROSTER_JOIN',
+            user: myPlayerName,
+            role: 'host',
+            pin: savedHostPin || '1337'
+          });
+        }
+        applyRoleUI('host');
       } else {
         switchViewRole(role);
       }
     };
 
     function switchViewRole(role) {
+      if (role === 'host' && !isHostAuthenticated) {
+        openLobbyModal();
+        return;
+      }
+      applyRoleUI(role);
+      if (socket && socket.connected) {
+        socket.emit('game_message', {
+          type: 'ROSTER_JOIN',
+          user: myPlayerName,
+          role: myRole,
+          pin: myRole === 'host' ? (savedHostPin || '1337') : undefined
+        });
+      }
+    }
+
+    function applyRoleUI(role) {
       myRole = role;
       localStorage.setItem('dos_player_role', role);
 
-      if (socket && socket.connected) {
-        socket.emit('game_message', { type: 'ROSTER_JOIN', user: myPlayerName, role: myRole });
+      if (role !== 'host') {
+        hostEditableDeck = null;
+        hostSecretAnswer = null;
       }
 
       document.getElementById('viewBoard').classList.remove('hidden');
       const hostConsole = document.getElementById('viewHost');
       const pill = document.getElementById('playerRolePill');
 
-      if (role === 'host') {
+      if (role === 'host' && isHostAuthenticated) {
         hostConsole.classList.remove('hidden');
+        hostConsole.classList.add('flex');
         pill.innerText = "ROLE: 👑 HOST MASTER";
         pill.className = "hidden sm:inline bg-black text-red-400 px-2 py-0.5 border border-red-500 font-mono";
       } else {
         hostConsole.classList.add('hidden');
+        hostConsole.classList.remove('flex');
         if (role === 'board') {
           pill.innerText = "ROLE: BOARD (SPECTATOR)";
           pill.className = "hidden sm:inline bg-black text-yellow-300 px-2 py-0.5 border border-yellow-400 font-mono";
@@ -1053,62 +1229,15 @@
             : "hidden sm:inline bg-black text-red-400 px-2 py-0.5 border border-red-400 font-mono";
         }
       }
+      lastBoardRenderSignature = '';
+      lastHostActionSignature = '';
       renderAll();
-    }
-
-    /* -------------------------------------------------------------
-       AUTHORITATIVE HOST-ONLY TIMER CLOCK LOOP
-    -------------------------------------------------------------- */
-    setInterval(() => {
-      const now = new Date();
-      document.getElementById('dosClock').innerText = now.toTimeString().split(' ')[0];
-
-      // ONLY the Host computes the active clock countdown
-      if (myRole !== 'host') return;
-      if (gameState.isPaused || gameState.phase === 'HOST_CONFIRM' || gameState.phase === 'GAME_OVER') return;
-
-      // Selection Timer
-      if (gameState.phase === 'SELECTION' && gameState.selectionTimerRunning) {
-        if (gameState.selectionTimer > 0) {
-          gameState.selectionTimer--;
-          if (gameState.selectionTimer === 3) window.sfxCountdown(3);
-          syncState();
-        } else {
-          gameState.selectionTimerRunning = false;
-          gameState.phase = 'SELECTION_TIMEOUT';
-          addEventLog(`[SELECTION EXPIRED] Time up for ${gameState.selectingTeam.toUpperCase()}. Awaiting Host.`);
-          syncState();
-        }
-      }
-      // Clue Timers (Thinking / Typing)
-      else if (['THINKING', 'TYPING', 'STEAL_THINKING', 'STEAL_TYPING'].includes(gameState.phase) && gameState.timerRunning) {
-        if (gameState.timer > 0) {
-          gameState.timer--;
-          if (gameState.timer <= 3 && gameState.timer > 0) window.sfxCountdown(gameState.timer);
-          syncState();
-        } else {
-          gameState.timerRunning = false;
-          if (gameState.phase === 'THINKING') gameState.phase = 'THINKING_TIMEOUT';
-          else if (gameState.phase === 'TYPING' || gameState.phase === 'STEAL_TYPING') gameState.phase = 'TYPING_TIMEOUT';
-          else if (gameState.phase === 'STEAL_THINKING') gameState.phase = 'THINKING_TIMEOUT';
-          window.sfxIncorrect();
-          addEventLog(`[TIME EXPIRED] Phase elapsed. Awaiting Host command.`);
-          syncState();
-        }
-      }
-    }, 1000);
-
-    function addEventLog(msg) {
-      const time = new Date().toTimeString().split(' ')[0];
-      gameState.logs.unshift(`[${time}] ${msg}`);
-      if (gameState.logs.length > 30) gameState.logs.pop();
-      renderLogs();
     }
 
     function renderLogs() {
       const box = document.getElementById('dosEventLogs');
       if (!box) return;
-      box.innerHTML = gameState.logs.slice(0, 5).map(l => `<div class="truncate">${escapeHtml(l)}</div>`).join('');
+      box.innerHTML = (gameState.logs || []).slice(0, 5).map(l => `<div class="truncate">${escapeHtml(l)}</div>`).join('');
     }
 
     /* -------------------------------------------------------------
@@ -1122,6 +1251,7 @@
       renderHostConfirmModal();
       renderTacticalAlertModal();
       renderClueStage();
+      renderVictoryModal();
       renderLogs();
     }
 
@@ -1129,13 +1259,11 @@
       document.getElementById('boardBlueScore').innerText = `$ ${gameState.scores.blue}`;
       document.getElementById('boardRedScore').innerText = `$ ${gameState.scores.red}`;
 
-      // Update Live Rosters on Board
       const bluePlayers = gameState.roster?.blue || [];
       const redPlayers = gameState.roster?.red || [];
       document.getElementById('boardBlueRoster').innerText = bluePlayers.length > 0 ? bluePlayers.join(', ') : '(None connected)';
       document.getElementById('boardRedRoster').innerText = redPlayers.length > 0 ? redPlayers.join(', ') : '(None connected)';
 
-      // Update Ribbon Host & Spectator telemetry
       document.getElementById('headerHostName').innerText = gameState.roster?.host || 'None';
       document.getElementById('headerSpectatorCount').innerText = (gameState.roster?.spectators || []).length;
 
@@ -1167,27 +1295,34 @@
         ? "px-2 py-0.5 font-bold uppercase border border-cyan-400 bg-cyan-950 text-cyan-300"
         : "px-2 py-0.5 font-bold uppercase border border-red-400 bg-red-950 text-red-300";
 
+      const shuffleActive = isShuffleAnimating || gameState.isShuffleRunning;
       let timerBadgeText = `[ ${gameState.selectionTimer}s ${gameState.selectionTimerRunning ? 'RUNNING' : 'PAUSED'} ]`;
-      if (gameState.phase === 'SELECTION_TIMEOUT') timerBadgeText = "[ 00s TIME EXPIRED — WAITING HOST ]";
-      else if (gameState.phase !== 'SELECTION') timerBadgeText = `[ ${gameState.phase.replace('_', ' ')} ]`;
+      if (shuffleActive) timerBadgeText = `[ ${gameState.selectionTimer}s ROULETTE SCAN ]`;
+      else if (gameState.phase === 'SELECTION_TIMEOUT') timerBadgeText = "[ 00s TIME EXPIRED — WAITING HOST ]";
+      else if (gameState.phase !== 'SELECTION') timerBadgeText = `[ ${gameState.phase.replace(/_/g, ' ')} ]`;
       document.getElementById('turnTimerBadge').innerText = timerBadgeText;
 
-      // CRITICAL FIX: Synchronize the BIG CLOCK (TIMELINE MONITOR) in real-time
       const boardClock = document.getElementById('boardPhaseClock');
       const boardDesc = document.getElementById('boardPhaseDesc');
 
-      if (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT') {
+      if (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT' || gameState.phase === 'HOST_CONFIRM') {
         const sec = gameState.selectionTimer;
         if (boardClock) boardClock.innerText = `00:${sec < 10 ? '0' : ''}${sec}`;
         if (boardDesc) {
-          if (gameState.phase === 'SELECTION_TIMEOUT') {
+          if (shuffleActive) {
+            boardDesc.innerText = `[ROULETTE ACTIVE] SCANNING SECTORS...`;
+            boardDesc.className = "text-xs text-yellow-300 font-bold animate-pulse";
+          } else if (gameState.phase === 'SELECTION_TIMEOUT') {
             boardDesc.innerText = `[EXPIRED] WAITING FOR HOST COMMAND...`;
             boardDesc.className = "text-xs text-red-400 font-bold animate-pulse";
+          } else if (gameState.phase === 'HOST_CONFIRM') {
+            boardDesc.innerText = `[PAUSED AT ${sec}s] HOST VERIFYING CLUSTER...`;
+            boardDesc.className = "text-xs text-yellow-300 tracking-wider";
           } else if (gameState.selectionTimerRunning) {
             boardDesc.innerText = `TEAM ${gameState.selectingTeam.toUpperCase()} CHOOSING A CLUSTER...`;
             boardDesc.className = "text-xs text-cyan-300 tracking-wider";
           } else {
-            boardDesc.innerText = `[PAUSED] WAITING FOR HOST TO START (20s)...`;
+            boardDesc.innerText = `[PAUSED] WAITING FOR HOST TO START (${sec}s)...`;
             boardDesc.className = "text-xs text-yellow-300 tracking-wider";
           }
         }
@@ -1195,7 +1330,7 @@
         const sec = gameState.timer;
         if (boardClock) boardClock.innerText = `00:${sec < 10 ? '0' : ''}${sec}`;
         if (boardDesc) {
-          boardDesc.innerText = `ACTIVE: ${gameState.turnSubmittingTeam ? gameState.turnSubmittingTeam.toUpperCase() : 'NONE'} (${gameState.phase.replace('_', ' ')})`;
+          boardDesc.innerText = `ACTIVE: ${gameState.turnSubmittingTeam ? gameState.turnSubmittingTeam.toUpperCase() : 'NONE'} (${gameState.phase.replace(/_/g, ' ')})`;
           boardDesc.className = "text-xs text-yellow-300 tracking-wider";
         }
       }
@@ -1216,7 +1351,19 @@
         const att = gameState.lastSelectionAttribution;
         document.getElementById('telemetryLastPick').innerText = `${att.player} (${att.catName} $${att.val})`;
         document.getElementById('boardActionAttribution').innerText = `SELECTED BY: [${att.player} (${att.team.toUpperCase()})] -> [${att.catName} // $${att.val}]`;
+      } else {
+        document.getElementById('telemetryLastPick').innerText = "None";
+        document.getElementById('boardActionAttribution').innerText = "READY FOR CATEGORY SELECTION";
       }
+
+      const pct = gameState.phase === 'MEDIA_PLAYING' ? (gameState.mediaProgress || 0) : (gameState.activeClue && gameState.activeClue.type !== 'text' ? 100 : 0);
+      const filledSmall = Math.round((pct / 100) * 30);
+      const smallBarStr = '[' + '█'.repeat(filledSmall) + '░'.repeat(30 - filledSmall) + ']';
+      document.getElementById('segmentedAsciiBar').innerText = smallBarStr;
+      document.getElementById('mediaPercentLabel').innerText = `${pct}%`;
+      document.getElementById('mediaStatusSub').innerText = gameState.phase === 'MEDIA_PLAYING' ? 'BUFFERING MEDIA STREAM...' : 'IDLE - READY';
+      const elapsedSec = Math.min(5, Math.floor((pct / 100) * 5));
+      document.getElementById('mediaTimeSub').innerText = pct > 0 ? `00:0${elapsedSec} / 00:05` : '00:00 / 00:00';
 
       const cleared = gameState.clearedClues.length;
       document.getElementById('headerTilesLeft').innerText = `${30 - cleared}/30`;
@@ -1227,45 +1374,64 @@
       const tilesBox = document.getElementById('boardTilesGrid');
       if (!headersBox || !tilesBox) return;
 
-      headersBox.innerHTML = gameDeck.map((cat, i) => `
-        <div class="bg-[#000060] border border-cyan-400 p-1 truncate text-yellow-300">
-          <div class="text-[9px] text-gray-400">CAT 0${i + 1}</div>
-          <div class="truncate uppercase text-xs">${escapeHtml(cat.category)}</div>
-        </div>
-      `).join('');
+      const shuffleActive = isShuffleAnimating || gameState.isShuffleRunning;
+      const canClick = (myRole === gameState.selectingTeam || (myRole === 'host' && isHostAuthenticated)) &&
+                       (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT') &&
+                       !shuffleActive;
 
-      let html = '';
-      const values = [200, 400, 600, 800, 1000];
-      const canClick = (myRole === gameState.selectingTeam || myRole === 'host') && 
-                       (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT');
+      const deckSig = gameDeck.map(c => `${c.category}:${c.clues.map(cl => cl.type).join(',')}`).join('|');
+      const clearedSig = (gameState.clearedClues || []).join(',');
+      const currentSig = `${deckSig}__${clearedSig}__${canClick}`;
 
-      values.forEach((val, valIdx) => {
-        gameDeck.forEach((cat, catIdx) => {
-          const key = `${catIdx}-${valIdx}`;
-          const isCleared = gameState.clearedClues.includes(key);
-          const clue = cat.clues[valIdx];
+      if (currentSig !== lastBoardRenderSignature) {
+        lastBoardRenderSignature = currentSig;
 
-          if (isCleared) {
-            html += `
-              <div class="bg-[#00003c] border border-gray-700 text-gray-600 p-2 sm:p-3 flex items-center justify-center font-bold text-xs select-none">
-                ░░░░
-              </div>
-            `;
-          } else {
-            html += `
-              <button onclick="handleTileClick(${catIdx}, ${valIdx})" ${canClick ? '' : 'disabled style="pointer-events: none; opacity: 0.8;"'} 
-                class="dos-btn p-2 sm:p-3 flex flex-col items-center justify-center font-bold text-xs sm:text-sm text-yellow-300 hover:scale-105 transition-transform ${canClick ? 'border-yellow-300' : 'border-cyan-400'}">
-                <span>$ ${val}</span>
-                <span class="text-[8px] text-cyan-300 font-normal">
-                  ${clue.type === 'audio' ? '♫ AUDIO' : clue.type === 'image' ? '🖼 PHOTO' : 'TXT'}
-                </span>
-              </button>
-            `;
-          }
+        headersBox.innerHTML = gameDeck.map((cat, i) => `
+          <div class="bg-[#000060] border border-cyan-400 p-1 truncate text-yellow-300">
+            <div class="text-[9px] text-gray-400">CAT 0${i + 1}</div>
+            <div class="truncate uppercase text-xs">${escapeHtml(cat.category)}</div>
+          </div>
+        `).join('');
+
+        let html = '';
+        const values = [200, 400, 600, 800, 1000];
+
+        values.forEach((val, valIdx) => {
+          gameDeck.forEach((cat, catIdx) => {
+            const key = `${catIdx}-${valIdx}`;
+            const isCleared = gameState.clearedClues.includes(key);
+            const clue = cat.clues[valIdx] || { value: val, type: 'text' };
+
+            if (isCleared) {
+              html += `
+                <div id="gridTile_${catIdx}_${valIdx}" class="bg-[#00003c] border border-gray-700 text-gray-600 p-2 sm:p-3 flex items-center justify-center font-bold text-xs select-none">
+                  ░░░░
+                </div>
+              `;
+            } else {
+              html += `
+                <button id="gridTile_${catIdx}_${valIdx}" onclick="handleTileClick(${catIdx}, ${valIdx})" ${canClick ? '' : 'disabled style="pointer-events: none; opacity: 0.8;"'} 
+                  class="dos-btn p-2 sm:p-3 flex flex-col items-center justify-center font-bold text-xs sm:text-sm text-yellow-300 hover:scale-105 transition-transform ${canClick ? 'border-yellow-300' : 'border-cyan-400'}">
+                  <span>$ ${val}</span>
+                  <span class="text-[8px] text-cyan-300 font-normal">
+                    ${clue.type === 'audio' ? '♫ AUDIO' : clue.type === 'image' ? '🖼 PHOTO' : 'TXT'}
+                  </span>
+                </button>
+              `;
+            }
+          });
         });
-      });
 
-      tilesBox.innerHTML = html;
+        tilesBox.innerHTML = html;
+      }
+
+      if (activeShuffleHighlight) {
+        const hiEl = document.getElementById(`gridTile_${activeShuffleHighlight.catIdx}_${activeShuffleHighlight.valIdx}`);
+        if (hiEl) {
+          hiEl.style.backgroundColor = activeShuffleHighlight.bg;
+          hiEl.style.color = activeShuffleHighlight.fg;
+        }
+      }
     }
 
     function renderPersistentInputBar() {
@@ -1274,6 +1440,7 @@
       const btnSubmit = document.getElementById('btnPersistentSubmit');
       const btnSkip = document.getElementById('btnPersistentSkip');
       const btnChallenge = document.getElementById('btnPersistentChallenge');
+      const btnShuffle = document.getElementById('btnPersistentShuffle');
 
       const isAnsweringSquad = (myRole === gameState.turnSubmittingTeam);
       const isDefendingSquad = (myRole === (gameState.turnSubmittingTeam === 'blue' ? 'red' : 'blue'));
@@ -1289,7 +1456,7 @@
       } else if (isAnsweringSquad && isThinkingPhase) {
         barTitle.innerText = `─ SQUADRON ${myRole.toUpperCase()} INPUT [THINKING PHASE] ─`;
         input.disabled = true;
-        input.placeholder = "[ 60s THINKING — DISCUSS WITH TEAM OR CLICK READY TO ANSWER ]";
+        input.placeholder = "[ THINKING PHASE — DISCUSS WITH TEAM OR CLICK READY TO ANSWER ]";
         btnSubmit.disabled = true;
       } else {
         barTitle.innerText = `─ SQUADRON TRANSMISSION TERMINAL [STANDBY] ─`;
@@ -1301,8 +1468,15 @@
       if (isAnsweringSquad && isThinkingPhase) btnSkip.classList.remove('hidden');
       else btnSkip.classList.add('hidden');
 
-      if (isDefendingSquad && isThinkingPhase && !gameState.isTacticalGambleUsed) btnChallenge.classList.remove('hidden');
+      if (isDefendingSquad && gameState.phase === 'THINKING' && !gameState.isTacticalGambleUsed) btnChallenge.classList.remove('hidden');
       else btnChallenge.classList.add('hidden');
+
+      const shuffleActive = isShuffleAnimating || gameState.isShuffleRunning;
+      const canShuffle = (myRole === gameState.selectingTeam) && 
+                         (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT') &&
+                         !shuffleActive;
+      if (canShuffle) btnShuffle.classList.remove('hidden');
+      else btnShuffle.classList.add('hidden');
 
       renderLiveTypingDrafts();
     }
@@ -1317,13 +1491,23 @@
       const modalText = document.getElementById('modalDraftText');
       const modalBadge = document.getElementById('modalInputDraftBadge');
 
-      if (draft && draft.text) {
+      const canSeeLiveDraft = (myRole === gameState.turnSubmittingTeam) || (myRole === 'host' && isHostAuthenticated);
+
+      if (draft && draft.text && canSeeLiveDraft) {
+        if (persistentAuthor) persistentAuthor.innerText = `${draft.author} is typing:`;
+        if (persistentText) persistentText.innerText = `"${draft.text}"`;
+        if (persistentBadge) persistentBadge.classList.remove('hidden');
+
+        if (modalAuthor) modalAuthor.innerText = `${draft.author} is typing:`;
+        if (modalText) modalText.innerText = `"${draft.text}"`;
+        if (modalBadge) modalBadge.classList.remove('hidden');
+      } else if (draft && draft.text && !canSeeLiveDraft) {
         if (persistentAuthor) persistentAuthor.innerText = `${draft.author}:`;
-        if (persistentText) persistentText.innerText = draft.text;
+        if (persistentText) persistentText.innerText = "[ENCRYPTED SQUADRON TRANSMISSION...]";
         if (persistentBadge) persistentBadge.classList.remove('hidden');
 
         if (modalAuthor) modalAuthor.innerText = `${draft.author}:`;
-        if (modalText) modalText.innerText = draft.text;
+        if (modalText) modalText.innerText = "[ENCRYPTED SQUADRON TRANSMISSION...]";
         if (modalBadge) modalBadge.classList.remove('hidden');
       } else {
         if (persistentAuthor) persistentAuthor.innerText = "Drafting:";
@@ -1341,13 +1525,15 @@
     -------------------------------------------------------------- */
     function renderHostDashboard() {
       const hostConsole = document.getElementById('viewHost');
-      if (myRole !== 'host') {
+      if (myRole !== 'host' || !isHostAuthenticated) {
         hostConsole.classList.add('hidden');
+        hostConsole.classList.remove('flex');
         return;
       }
       hostConsole.classList.remove('hidden');
+      hostConsole.classList.add('flex');
 
-      document.getElementById('hostPhaseTitleBadge').innerText = `PHASE: ${gameState.phase.replace('_', ' ')}`;
+      document.getElementById('hostPhaseTitleBadge').innerText = `PHASE: ${gameState.phase.replace(/_/g, ' ')}`;
       const actionBox = document.getElementById('hostDynamicActionBox');
 
       const blueInput = document.getElementById('hostOverrideBlueInput');
@@ -1358,36 +1544,32 @@
       const pauseBtn = document.getElementById('hostPauseBtn');
       pauseBtn.innerText = gameState.isPaused ? "[ ▶ RESUME CLOCK ]" : "[ ⏸ PAUSE CLOCK ]";
 
-      // Secret Answer Preview
-      if (gameState.activeClue) {
-        const cat = gameDeck[gameState.activeClue.catIdx];
-        document.getElementById('hostSecretAnswerPreview').innerText = cat.clues[gameState.activeClue.clueIdx].a;
-      } else if (gameState.pendingHostClue) {
-        const cat = gameDeck[gameState.pendingHostClue.catIdx];
-        document.getElementById('hostSecretAnswerPreview').innerText = cat.clues[gameState.pendingHostClue.clueIdx].a;
+      if (hostSecretAnswer) {
+        document.getElementById('hostSecretAnswerPreview').innerText = hostSecretAnswer;
       } else {
         document.getElementById('hostSecretAnswerPreview').innerText = "[ NO ACTIVE CLUE ]";
       }
 
-      // Submission Preview
       if (gameState.lockedSubmission) {
         document.getElementById('hostSubmittedAnswerPreview').innerText = `"${gameState.lockedSubmission.text}" by ${gameState.lockedSubmission.player} (${gameState.lockedSubmission.team.toUpperCase()})`;
       } else {
         document.getElementById('hostSubmittedAnswerPreview').innerText = "[ NO SUBMISSION YET ]";
       }
 
+      const shuffleActive = isShuffleAnimating || gameState.isShuffleRunning;
       let html = '';
 
       if (gameState.phase === 'SELECTION') {
         html = `
           <div class="text-xs text-yellow-300 font-bold mb-2">
-            TURN: SQUADRON ${gameState.selectingTeam.toUpperCase()} IS CHOOSING A TILE (${gameState.selectionTimer}s remaining)
+            TURN: SQUADRON ${escapeHtml(gameState.selectingTeam.toUpperCase())} IS CHOOSING A TILE (<span id="hostLiveSelectionSec">${gameState.selectionTimer}</span>s remaining)
           </div>
           <div class="flex flex-wrap gap-2">
             ${gameState.selectionTimerRunning 
-              ? `<button onclick="hostToggleSelectionTimer(false)" class="dos-btn dos-btn-yellow px-3 py-1.5">[ ⏸ PAUSE 20s TIMER ]</button>`
-              : `<button onclick="hostToggleSelectionTimer(true)" class="dos-btn dos-btn-green px-3 py-1.5">[ ▶ START 20s SELECTION TIMER ]</button>`}
-            <button onclick="hostAddSeconds(10)" class="dos-btn px-3 py-1.5">[ +10s TIME ]</button>
+              ? `<button onclick="hostToggleSelectionTimer(false)" ${shuffleActive ? 'disabled' : ''} class="dos-btn dos-btn-yellow px-3 py-1.5">[ ⏸ PAUSE 20s TIMER ]</button>`
+              : `<button onclick="hostToggleSelectionTimer(true)" ${shuffleActive ? 'disabled' : ''} class="dos-btn dos-btn-green px-3 py-1.5">[ ▶ START 20s SELECTION TIMER ]</button>`}
+            <button onclick="triggerRandomTileScan()" ${shuffleActive ? 'disabled' : ''} class="dos-btn dos-btn-yellow px-3 py-1.5 font-bold">[ 🎲 RANDOM SCAN ]</button>
+            <button onclick="hostAddSeconds(10)" ${shuffleActive ? 'disabled' : ''} class="dos-btn px-3 py-1.5">[ +10s TIME ]</button>
             <button onclick="hostForfeitSelection()" class="dos-btn dos-btn-red px-3 py-1.5">[ ⏩ PASS TURN TO ${gameState.selectingTeam === 'blue' ? 'RED' : 'BLUE'} ]</button>
           </div>
         `;
@@ -1395,11 +1577,12 @@
       else if (gameState.phase === 'SELECTION_TIMEOUT') {
         html = `
           <div class="text-xs text-red-400 font-bold mb-2 animate-pulse">
-            ⚠️ 20s SELECTION TIME EXPIRED! ${gameState.selectingTeam.toUpperCase()} DID NOT PICK A TILE.
+            ⚠️ 20s SELECTION TIME EXPIRED! ${escapeHtml(gameState.selectingTeam.toUpperCase())} DID NOT PICK A TILE.
           </div>
           <div class="flex flex-wrap gap-2">
+            <button onclick="triggerRandomTileScan()" ${shuffleActive ? 'disabled' : ''} class="dos-btn dos-btn-yellow px-3 py-1.5 font-bold">[ 🎲 RANDOM SCAN ]</button>
             <button onclick="hostForfeitSelection()" class="dos-btn dos-btn-red px-3 py-1.5 font-bold">[ ⏩ FORFEIT -> PASS TURN TO ${gameState.selectingTeam === 'blue' ? 'RED' : 'BLUE'} ]</button>
-            <button onclick="hostAddSeconds(10)" class="dos-btn dos-btn-yellow px-3 py-1.5">[ +10s MORE TIME ]</button>
+            <button onclick="hostAddSeconds(10)" ${shuffleActive ? 'disabled' : ''} class="dos-btn dos-btn-yellow px-3 py-1.5">[ +10s MORE TIME ]</button>
           </div>
         `;
       }
@@ -1407,23 +1590,25 @@
         const cat = gameDeck[gameState.pendingHostClue?.catIdx];
         html = `
           <div class="text-xs text-yellow-300 font-bold mb-2">
-            ⚠️ TILE SELECTED: <span class="text-white">${cat?.category} $${gameState.pendingHostClue?.value}</span> by <span class="text-cyan-300">${gameState.lastSelectionAttribution?.player} (${gameState.selectingTeam.toUpperCase()})</span>
+            ⚠️ TILE SELECTED: <span class="text-white">${escapeHtml(cat?.category)} $${escapeHtml(gameState.pendingHostClue?.value)}</span> by <span class="text-cyan-300">${escapeHtml(gameState.lastSelectionAttribution?.player)} (${escapeHtml(gameState.selectingTeam.toUpperCase())})</span>
           </div>
           <div class="flex flex-wrap gap-3">
-            <button onclick="hostConfirmClueExecution(true)" class="dos-btn dos-btn-green px-4 py-2 font-bold text-sm">[ ✅ CONFIRM & REVEAL CLUE (ENTER) ]</button>
+            <button onclick="hostConfirmClueExecution(true)" class="dos-btn dos-btn-green px-4 py-2 font-bold text-sm">[ ✅ CONFIRM &amp; REVEAL CLUE (ENTER) ]</button>
             <button onclick="hostConfirmClueExecution(false)" class="dos-btn dos-btn-red px-4 py-2 font-bold text-sm">[ ❌ REJECT SELECTION (ESC) ]</button>
           </div>
         `;
       }
-      else if (gameState.phase === 'THINKING') {
+      else if (gameState.phase === 'THINKING' || gameState.phase === 'STEAL_THINKING') {
+        const isSteal = gameState.phase === 'STEAL_THINKING';
+        const labelSec = isSteal ? '20s STEAL THINKING' : '60s THINKING';
         html = `
           <div class="text-xs text-yellow-300 font-bold mb-2">
-            🧠 60s THINKING PHASE FOR SQUADRON ${gameState.turnSubmittingTeam.toUpperCase()} (Clock: ${gameState.timer}s)
+            🧠 ${labelSec} PHASE FOR SQUADRON ${escapeHtml(gameState.turnSubmittingTeam?.toUpperCase())} (Clock: <span id="hostLivePhaseSec">${gameState.timer}</span>s)
           </div>
           <div class="flex flex-wrap gap-2">
             ${gameState.timerRunning 
-              ? `<button onclick="hostToggleThinkingTimer(false)" class="dos-btn dos-btn-yellow px-3 py-1.5">[ ⏸ PAUSE 60s TIMER ]</button>`
-              : `<button onclick="hostToggleThinkingTimer(true)" class="dos-btn dos-btn-green px-3 py-1.5 font-bold">[ ▶ START 60s TIMER ]</button>`}
+              ? `<button onclick="hostToggleThinkingTimer(false)" class="dos-btn dos-btn-yellow px-3 py-1.5">[ ⏸ PAUSE TIMER ]</button>`
+              : `<button onclick="hostToggleThinkingTimer(true)" class="dos-btn dos-btn-green px-3 py-1.5 font-bold">[ ▶ START ${isSteal ? '20s STEAL' : '60s'} TIMER ]</button>`}
             <button onclick="hostProceedToTyping()" class="dos-btn dos-btn-yellow px-3 py-1.5">[ ⚡ FORCE 15s TYPING NOW ]</button>
             <button onclick="hostAddSeconds(10)" class="dos-btn px-3 py-1.5">[ +10s TIME ]</button>
           </div>
@@ -1432,7 +1617,7 @@
       else if (gameState.phase === 'THINKING_TIMEOUT') {
         html = `
           <div class="text-xs text-red-400 font-bold mb-2 animate-pulse">
-            ⚠️ 60s THINKING TIME EXPIRED!
+            ⚠️ THINKING TIME EXPIRED!
           </div>
           <div class="flex flex-wrap gap-2">
             <button onclick="hostProceedToTyping()" class="dos-btn dos-btn-green px-4 py-1.5 font-bold">[ ⚡ PROCEED TO 15s TYPING ]</button>
@@ -1443,7 +1628,7 @@
       else if (gameState.phase === 'TYPING' || gameState.phase === 'STEAL_TYPING') {
         html = `
           <div class="text-xs text-yellow-300 font-bold mb-2">
-            ⌨️ 15s TYPING COUNTDOWN: SQUADRON ${gameState.turnSubmittingTeam.toUpperCase()} (Remaining: ${gameState.timer}s)
+            ⌨️ 15s ${gameState.phase === 'STEAL_TYPING' ? 'STEAL ' : ''}TYPING COUNTDOWN: SQUADRON ${escapeHtml(gameState.turnSubmittingTeam?.toUpperCase())} (Remaining: <span id="hostLivePhaseSec">${gameState.timer}</span>s)
           </div>
           <div class="flex flex-wrap gap-2">
             <button onclick="hostToggleThinkingTimer(!gameState.timerRunning)" class="dos-btn dos-btn-yellow px-3 py-1.5">${gameState.timerRunning ? '[ ⏸ PAUSE ]' : '[ ▶ RESUME ]'}</button>
@@ -1466,12 +1651,19 @@
       else if (gameState.phase === 'HOST_JUDGING') {
         html = `
           <div class="text-xs text-yellow-300 font-bold mb-2">
-            ⚖️ VERDICT REQUIRED FOR SQUADRON ${gameState.lockedSubmission?.team.toUpperCase()}
+            ⚖️ VERDICT REQUIRED FOR SQUADRON ${escapeHtml(gameState.lockedSubmission?.team?.toUpperCase())}
           </div>
           <div class="flex flex-wrap gap-3">
             <button onclick="hostAwardVerdict(true)" class="dos-btn dos-btn-green px-4 py-2 font-bold text-sm">[ ✅ CORRECT (+$$$) ]</button>
             <button onclick="hostAwardVerdict(false)" class="dos-btn dos-btn-red px-4 py-2 font-bold text-sm">[ ❌ INCORRECT (NEXT/STEAL) ]</button>
-            <button onclick="triggerHostVoidSubmission()" class="dos-btn dos-btn-yellow px-3 py-2 text-xs">[ ↩ VOID & REFUND 15s ]</button>
+            <button onclick="triggerHostVoidSubmission()" class="dos-btn dos-btn-yellow px-3 py-2 text-xs">[ ↩ VOID &amp; REFUND 15s ]</button>
+          </div>
+        `;
+      }
+      else if (gameState.phase === 'MEDIA_PLAYING' || gameState.phase === 'COUNTDOWN') {
+        html = `
+          <div class="text-xs text-cyan-300 font-bold">
+            ⏳ BROADCASTING CLUE SEQUENCE (${escapeHtml(gameState.phase)})...
           </div>
         `;
       }
@@ -1479,7 +1671,16 @@
         html = `<div class="text-xs text-gray-300">SYSTEM IDLE // STANDBY</div>`;
       }
 
-      actionBox.innerHTML = html;
+      const actionSig = `${gameState.phase}__${gameState.selectingTeam}__${gameState.turnSubmittingTeam}__${gameState.selectionTimerRunning}__${gameState.timerRunning}__${shuffleActive}__${gameState.pendingHostClue?.catIdx}-${gameState.pendingHostClue?.clueIdx}`;
+      if (actionSig !== lastHostActionSignature) {
+        lastHostActionSignature = actionSig;
+        actionBox.innerHTML = html;
+      } else {
+        const selSecEl = document.getElementById('hostLiveSelectionSec');
+        if (selSecEl) selSecEl.innerText = gameState.selectionTimer;
+        const phaseSecEl = document.getElementById('hostLivePhaseSec');
+        if (phaseSecEl) phaseSecEl.innerText = gameState.timer;
+      }
     }
 
     function renderHostConfirmModal() {
@@ -1487,7 +1688,7 @@
       if (gameState.phase === 'HOST_CONFIRM' && gameState.pendingHostClue) {
         modal.classList.remove('hidden');
         const cat = gameDeck[gameState.pendingHostClue.catIdx];
-        document.getElementById('confirmModalCategory').innerText = cat.category;
+        document.getElementById('confirmModalCategory').innerText = cat ? cat.category : 'CATEGORY';
         document.getElementById('confirmModalValue').innerText = `$ ${gameState.pendingHostClue.value}`;
         document.getElementById('confirmModalTeam').innerText = gameState.selectingTeam.toUpperCase();
         document.getElementById('confirmModalPlayer').innerText = gameState.lastSelectionAttribution?.player || "Player";
@@ -1495,7 +1696,7 @@
         const hostBtns = document.getElementById('confirmModalHostButtons');
         const nonHostNotice = document.getElementById('confirmModalNonHostNotice');
 
-        if (myRole === 'host') {
+        if (myRole === 'host' && isHostAuthenticated) {
           hostBtns.classList.remove('hidden');
           nonHostNotice.classList.add('hidden');
         } else {
@@ -1515,28 +1716,28 @@
       const minBanner = document.getElementById('minimizedClueBanner');
       const hasActiveClue = ['COUNTDOWN', 'MEDIA_PLAYING', 'THINKING', 'THINKING_TIMEOUT', 'TYPING', 'TYPING_TIMEOUT', 'STEAL_THINKING', 'STEAL_TYPING', 'HOST_JUDGING'].includes(gameState.phase);
 
-      if (!hasActiveClue) {
+      if (!hasActiveClue || !gameState.activeClue) {
         modal.classList.add('hidden');
         minBanner.classList.add('hidden');
+        minBanner.classList.remove('flex');
         isClueMinimized = false;
         return;
       }
 
-      if (!gameState.activeClue) return;
-
       const cat = gameDeck[gameState.activeClue.catIdx];
-      document.getElementById('stageCategoryName').innerText = cat.category;
+      const catName = cat ? cat.category : 'CATEGORY';
+      document.getElementById('stageCategoryName').innerText = catName;
       document.getElementById('stageClueValue').innerText = `$ ${gameState.activeClue.value}`;
-      document.getElementById('minimizedClueTitle').innerText = `${cat.category} $${gameState.activeClue.value}`;
+      document.getElementById('minimizedClueTitle').innerText = `${catName} $${gameState.activeClue.value}`;
 
       let timerStr = `00:${gameState.timer < 10 ? '0' : ''}${gameState.timer}`;
       if (!gameState.timerRunning) timerStr += " [PAUSED]";
       document.getElementById('stageTimerClock').innerText = timerStr;
-      document.getElementById('stagePhaseBadge').innerText = gameState.phase.replace('_', ' ');
+      document.getElementById('stagePhaseBadge').innerText = gameState.phase.replace(/_/g, ' ');
       document.getElementById('stageActiveSquad').innerText = gameState.turnSubmittingTeam ? gameState.turnSubmittingTeam.toUpperCase() : "NONE";
 
       const warn = document.getElementById('stageTacticalWarning');
-      if (gameState.isTacticalGambleUsed) {
+      if (gameState.isTacticalGambleUsed && gameState.challengerTeam) {
         warn.innerText = `⚠️ TACTICAL CHALLENGE EXECUTED BY ${gameState.challengerTeam.toUpperCase()}! (-$${gameState.activeClue.value} RISK)`;
       } else {
         warn.innerText = "";
@@ -1548,13 +1749,22 @@
       if (gameState.phase === 'COUNTDOWN') {
         arcade.classList.remove('hidden');
         content.classList.add('hidden');
+        content.classList.remove('flex');
+        const bigNum = document.getElementById('arcadeBigNumber');
+        bigNum.innerText = gameState.arcadeCount > 0 ? String(gameState.arcadeCount) : "GO!";
       } else {
         arcade.classList.add('hidden');
         content.classList.remove('hidden');
+        content.classList.add('flex');
         document.getElementById('stageCluePrompt').innerText = gameState.activeClue.q;
         setupMediaStage();
 
-        // 1. UPDATE MODAL INPUT BAR FOR PLAYERS
+        const pct = gameState.phase === 'MEDIA_PLAYING' ? (gameState.mediaProgress || 0) : 100;
+        const filled = Math.round((pct / 100) * 32);
+        const barStr = '[' + '█'.repeat(filled) + '░'.repeat(32 - filled) + ']';
+        document.getElementById('stageMediaPct').innerText = `${pct}%`;
+        document.getElementById('stageMediaAscii').innerText = barStr;
+
         const modalInput = document.getElementById('modalStageAnswerInput');
         const modalSubmit = document.getElementById('btnModalStageSubmit');
         const modalSkip = document.getElementById('btnModalStageSkip');
@@ -1574,7 +1784,12 @@
         } else if (isAnsweringSquad && isThinkingPhase) {
           modalSquadTitle.innerText = `SQUADRON ${myRole.toUpperCase()} INPUT [THINKING]:`;
           modalInput.disabled = true;
-          modalInput.placeholder = "[ 60s THINKING — DISCUSS WITH TEAM OR CLICK READY TO ANSWER ]";
+          modalInput.placeholder = "[ THINKING PHASE — DISCUSS WITH TEAM OR CLICK READY TO ANSWER ]";
+          modalSubmit.disabled = true;
+        } else if (gameState.phase === 'MEDIA_PLAYING') {
+          modalSquadTitle.innerText = `SQUADRON INPUT [MEDIA STREAMING — LOCKED]:`;
+          modalInput.disabled = true;
+          modalInput.placeholder = "[ AUDIO/IMAGE BUFFERING — INPUTS LOCKED ]";
           modalSubmit.disabled = true;
         } else {
           modalSquadTitle.innerText = `SQUADRON INPUT [STANDBY]:`;
@@ -1586,55 +1801,66 @@
         if (isAnsweringSquad && isThinkingPhase) modalSkip.classList.remove('hidden');
         else modalSkip.classList.add('hidden');
 
-        if (isDefendingSquad && isThinkingPhase && !gameState.isTacticalGambleUsed) modalChallenge.classList.remove('hidden');
+        if (isDefendingSquad && gameState.phase === 'THINKING' && !gameState.isTacticalGambleUsed) modalChallenge.classList.remove('hidden');
         else modalChallenge.classList.add('hidden');
 
-        // 2. UPDATE MODAL HOST COMMAND DESK FOR HOST
         const modalHostDesk = document.getElementById('modalHostCommandSection');
         const btnAbortClue = document.getElementById('btnHostAbortClue');
 
-        if (myRole === 'host') {
+        if (myRole === 'host' && isHostAuthenticated) {
           modalHostDesk.classList.remove('hidden');
           btnAbortClue.classList.remove('hidden');
 
-          document.getElementById('modalHostSecretAnswer').innerText = `KEY: "${cat.clues[gameState.activeClue.clueIdx].a}"`;
+          document.getElementById('modalHostSecretAnswer').innerText = `KEY: "${hostSecretAnswer || '...'}"`;
           const btnPlayPause = document.getElementById('btnModalHostPlayPause');
+          const canToggleTimer = ['THINKING', 'STEAL_THINKING', 'TYPING', 'STEAL_TYPING'].includes(gameState.phase) && gameState.timer > 0;
+          btnPlayPause.disabled = !canToggleTimer;
           btnPlayPause.innerText = gameState.timerRunning ? "[ ⏸ PAUSE TIMER ]" : "[ ▶ START TIMER ]";
+
+          const btnVoid = document.getElementById('btnModalHostVoid');
+          if (btnVoid) btnVoid.disabled = !gameState.lockedSubmission;
+          const btnForceTyping = document.getElementById('btnModalHostForceTyping');
+          if (btnForceTyping) btnForceTyping.disabled = ['TYPING', 'STEAL_TYPING', 'HOST_JUDGING'].includes(gameState.phase);
         } else {
           modalHostDesk.classList.add('hidden');
           btnAbortClue.classList.add('hidden');
         }
       }
 
-      // Handle Minimizing/Expanding
       if (isClueMinimized) {
         modal.classList.add('hidden');
         minBanner.classList.remove('hidden');
+        minBanner.classList.add('flex');
       } else {
         modal.classList.remove('hidden');
         minBanner.classList.add('hidden');
+        minBanner.classList.remove('flex');
       }
     }
 
     window.toggleClueMinimize = function(minimize) {
       isClueMinimized = minimize;
       renderClueStage();
+      if (myRole === gameState.turnSubmittingTeam && ['TYPING', 'STEAL_TYPING'].includes(gameState.phase) && !gameState.lockedSubmission) {
+        const targetInput = minimize
+          ? document.getElementById('persistentAnswerInput')
+          : document.getElementById('modalStageAnswerInput');
+        if (targetInput && !targetInput.disabled) {
+          targetInput.focus();
+          const len = targetInput.value.length;
+          try { targetInput.setSelectionRange(len, len); } catch (e) {}
+        }
+      }
     };
 
     window.hostAbortClueFromModal = function() {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.showDosModal(
         "CONFIRM ABORT CLUE",
         "Abort this clue, return to board, and refund turn to active squadron?",
         () => {
-          gameState.activeClue = null;
-          gameState.pendingHostClue = null;
-          gameState.lockedSubmission = null;
-          gameState.phase = 'SELECTION';
-          gameState.selectionTimer = 20;
-          gameState.selectionTimerRunning = false;
-          addEventLog("[HOST] Active clue aborted by Host. Returned to board.");
-          syncState();
+          stopExternalAudio();
+          sendHostAction('ABORT_CLUE');
         },
         () => {}
       );
@@ -1643,122 +1869,180 @@
     /* -------------------------------------------------------------
        TILE CLICK & STATE-ROUTED HOST CONFIRMATION
     -------------------------------------------------------------- */
-    window.handleTileClick = function(catIdx, valIdx) {
+    window.handleTileClick = function(catIdx, valIdx, fromRoulette = false) {
       if (gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') return;
+      if ((isShuffleAnimating || gameState.isShuffleRunning) && !fromRoulette) return;
+      const canClick = (myRole === gameState.selectingTeam) || (myRole === 'host' && isHostAuthenticated);
+      if (!canClick) return;
       window.sfxKeyClick();
 
-      const clue = gameDeck[catIdx].clues[valIdx];
-      gameState.pendingHostClue = {
-        catIdx,
-        clueIdx: valIdx,
-        value: clue.value,
-        q: clue.q,
-        type: clue.type || 'text',
-        mediaUrl: clue.mediaUrl || ''
-      };
-
-      gameState.lastSelectionAttribution = {
-        team: gameState.selectingTeam,
-        player: myPlayerName,
-        catName: gameDeck[catIdx].category,
-        val: clue.value
-      };
-
-      gameState.selectionTimerRunning = false;
-      gameState.phase = 'HOST_CONFIRM';
-      addEventLog(`[TILE CLICKED] ${gameDeck[catIdx].category} $${clue.value} by ${myPlayerName}. Awaiting Host confirmation.`);
-      syncState();
+      if (socket && socket.connected) {
+        socket.emit('game_message', { type: 'SELECT_TILE', catIdx, clueIdx: valIdx, fromRoulette: Boolean(fromRoulette) });
+      }
     };
 
     window.hostConfirmClueExecution = function(confirmed) {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.sfxKeyClick();
-
-      if (!confirmed) {
-        gameState.pendingHostClue = null;
-        gameState.phase = 'SELECTION';
-        gameState.selectionTimerRunning = true;
-        addEventLog("[HOST ABORT] Tile rejected. Selection timer resumed.");
-        syncState();
-        return;
-      }
-
-      gameState.activeClue = { ...gameState.pendingHostClue };
-      gameState.pendingHostClue = null;
-      gameState.turnSubmittingTeam = gameState.selectingTeam;
-      gameState.isTacticalGambleUsed = false;
-      gameState.challengerTeam = null;
-      gameState.liveDraft = { author: "", text: "" };
-      gameState.lockedSubmission = null;
-      isClueMinimized = false;
-
-      addEventLog(`[CLUE BROADCAST] ${gameDeck[gameState.activeClue.catIdx].category} $${gameState.activeClue.value} confirmed by Host.`);
-
-      if (gameState.activeClue.type === 'audio' || gameState.activeClue.type === 'image') {
-        startMediaPlaybackSequence();
-      } else {
-        startArcadeCountdown();
-      }
+      sendHostAction('CONFIRM_CLUE', { confirmed: Boolean(confirmed) });
     };
 
     /* -------------------------------------------------------------
-       MEDIA BUFFER ENGINE
+       4-SECOND RANDOM CLUSTER SCAN (SECTOR ROULETTE)
     -------------------------------------------------------------- */
-    let mediaInterval = null;
+    window.triggerRandomTileScan = function() {
+      if (isShuffleAnimating || gameState.isShuffleRunning) return;
+      if (gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') return;
+      const canTrigger = (myRole === gameState.selectingTeam) || (myRole === 'host' && isHostAuthenticated);
+      if (!canTrigger) return;
 
-    function startMediaPlaybackSequence() {
-      gameState.phase = 'MEDIA_PLAYING';
-      syncState();
-
-      let progress = 0;
-      const totalTicks = 25;
-      const stageAscii = document.getElementById('stageMediaAscii');
-      const smallAscii = document.getElementById('segmentedAsciiBar');
-
-      if (gameState.activeClue.type === 'audio') synthesizeChiptuneAudio();
-
-      if (mediaInterval) clearInterval(mediaInterval);
-      mediaInterval = setInterval(() => {
-        if (gameState.isPaused) return;
-
-        progress++;
-        const pct = Math.min(100, Math.round((progress / totalTicks) * 100));
-        const filled = Math.round((pct / 100) * 32);
-        const barStr = '[' + '█'.repeat(filled) + '░'.repeat(32 - filled) + ']';
-
-        if (stageAscii) stageAscii.innerText = barStr;
-        if (smallAscii) smallAscii.innerText = barStr;
-
-        document.getElementById('stageMediaPct').innerText = `${pct}%`;
-        document.getElementById('mediaPercentLabel').innerText = `${pct}%`;
-        document.getElementById('mediaTimeSub').innerText = `00:0${Math.floor(progress / 5)} / 00:05`;
-
-        if (progress % 5 === 0) playTone(700, 0.03, 'sine', 0.04);
-
-        if (progress >= totalTicks) {
-          clearInterval(mediaInterval);
-          runMediaGraceBuffer(3);
+      const availableTiles = [];
+      for (let c = 0; c < 6; c++) {
+        for (let r = 0; r < 5; r++) {
+          const key = `${c}-${r}`;
+          if (!gameState.clearedClues.includes(key)) {
+            availableTiles.push({ catIdx: c, valIdx: r });
+          }
         }
-      }, 200);
-    }
+      }
 
-    function runMediaGraceBuffer(seconds) {
-      if (seconds > 0) {
-        playTone(520, 0.06, 'triangle', 0.08);
-        setTimeout(() => runMediaGraceBuffer(seconds - 1), 1000);
-      } else {
-        startArcadeCountdown();
+      if (availableTiles.length === 0) return;
+
+      const target = availableTiles[Math.floor(Math.random() * availableTiles.length)];
+      const payload = {
+        type: 'START_SHUFFLE_SCAN',
+        target: target,
+        pool: availableTiles,
+        caller: myPlayerName
+      };
+
+      if (socket && socket.connected) {
+        socket.emit('game_message', payload);
+      }
+    };
+
+    function setTileShuffleHighlight(catIdx, valIdx, bg, fg) {
+      if (activeShuffleHighlight) {
+        const prevEl = document.getElementById(`gridTile_${activeShuffleHighlight.catIdx}_${activeShuffleHighlight.valIdx}`);
+        if (prevEl) {
+          prevEl.style.backgroundColor = '';
+          prevEl.style.color = '';
+        }
+      }
+      if (catIdx === null || valIdx === null) {
+        activeShuffleHighlight = null;
+        return;
+      }
+      activeShuffleHighlight = { catIdx, valIdx, bg, fg };
+      const nextEl = document.getElementById(`gridTile_${catIdx}_${valIdx}`);
+      if (nextEl) {
+        nextEl.style.backgroundColor = bg;
+        nextEl.style.color = fg;
       }
     }
 
+    function executeShuffleAnimation(data) {
+      clearShuffleTimersAndStyles();
+      if (!data || !Array.isArray(data.pool) || data.pool.length === 0 || !data.target) return;
+
+      isShuffleAnimating = true;
+      renderBoardHUD();
+      renderBoardGrid();
+      renderPersistentInputBar();
+      renderHostDashboard();
+
+      const { target, pool } = data;
+      const totalDuration = 4000;
+      const startTime = performance.now();
+
+      function stepScan() {
+        if (!isShuffleAnimating) return;
+        const elapsed = performance.now() - startTime;
+
+        if (elapsed < totalDuration) {
+          const randomPick = pool[Math.floor(Math.random() * pool.length)];
+          setTileShuffleHighlight(randomPick.catIdx, randomPick.valIdx, '#FFFF55', '#000000');
+          playTone(700 + Math.random() * 300, 0.02, 'square', 0.05);
+
+          const progressRatio = Math.min(1, elapsed / totalDuration);
+          const nextDelay = Math.round(55 + (progressRatio * progressRatio * 110));
+          activeScanTimeout = setTimeout(stepScan, nextDelay);
+        } else {
+          setTileShuffleHighlight(null, null, '', '');
+          let blinks = 0;
+
+          activeBlinkInterval = setInterval(() => {
+            if (!isShuffleAnimating) {
+              clearShuffleTimersAndStyles();
+              return;
+            }
+            blinks++;
+            if (blinks % 2 === 1) {
+              setTileShuffleHighlight(target.catIdx, target.valIdx, '#55FF55', '#000000');
+              playTone(880, 0.08, 'square', 0.15);
+            } else {
+              setTileShuffleHighlight(null, null, '', '');
+            }
+
+            if (blinks >= 8) {
+              clearShuffleTimersAndStyles();
+              renderAll();
+
+              const isCallerSocket = Boolean(socket && data.callerSocketId && socket.id === data.callerSocketId);
+              const isCallerFallback = (!data.callerSocketId && myPlayerName === data.caller);
+              if (isCallerSocket || isCallerFallback) {
+                handleTileClick(target.catIdx, target.valIdx, true);
+              }
+            }
+          }, 180);
+        }
+      }
+
+      stepScan();
+    }
+
+    /* -------------------------------------------------------------
+       MEDIA STAGE & SYNTHESIZED / URL / BASE64 AUDIO PLAYBACK
+    -------------------------------------------------------------- */
+    function getResolvedActiveMediaUrl() {
+      if (activeClueMediaCache) return activeClueMediaCache;
+      if (gameState.activeClue && gameState.activeClue.mediaUrl) return gameState.activeClue.mediaUrl;
+      return '';
+    }
+
     function synthesizeChiptuneAudio() {
+      if (!gameState.activeClue || gameState.activeClue.type !== 'audio') return;
+      const mediaUrl = String(getResolvedActiveMediaUrl() || 'synth:c_major_scale');
+
+      if (
+        mediaUrl.startsWith('http://') ||
+        mediaUrl.startsWith('https://') ||
+        mediaUrl.startsWith('data:audio/') ||
+        mediaUrl.startsWith('blob:')
+      ) {
+        try {
+          stopExternalAudio();
+          externalAudioPlayer = new Audio(mediaUrl);
+          externalAudioPlayer.muted = isSoundMuted;
+          externalAudioPlayer.play().catch(() => {});
+          return;
+        } catch (e) {}
+      }
+
       initAudio();
-      const notes = [261.6, 329.6, 392.0, 523.2, 659.2, 783.9, 1046.5];
-      notes.forEach((freq, idx) => setTimeout(() => playTone(freq, 0.22, 'square', 0.15), idx * 240));
+      if (mediaUrl === 'synth:80s_arpeggio') {
+        const arp = [220.0, 261.63, 329.63, 440.0, 329.63, 261.63, 293.66, 349.23, 440.0, 587.33];
+        arp.forEach((freq, idx) => setTimeout(() => playTone(freq, 0.16, 'sawtooth', 0.15), idx * 160));
+      } else {
+        const scale = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
+        scale.forEach((freq, idx) => setTimeout(() => playTone(freq, 0.20, 'square', 0.15), idx * 210));
+      }
     }
 
     window.replayAudioTrack = function() {
-      if (gameState.activeClue && gameState.activeClue.type === 'audio') synthesizeChiptuneAudio();
+      if (gameState.activeClue && gameState.activeClue.type === 'audio') {
+        synthesizeChiptuneAudio();
+      }
     };
 
     function setupMediaStage() {
@@ -1768,14 +2052,19 @@
 
       if (!gameState.activeClue || gameState.activeClue.type === 'text') {
         container.classList.add('hidden');
+        container.classList.remove('flex');
         return;
       }
       container.classList.remove('hidden');
+      container.classList.add('flex');
 
       if (gameState.activeClue.type === 'image') {
         img.classList.remove('hidden');
         audioWrap.classList.add('hidden');
-        img.src = gameState.activeClue.mediaUrl || "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80";
+        const resolvedImg = getResolvedActiveMediaUrl() || "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80";
+        if (img.getAttribute('src') !== resolvedImg) {
+          img.src = resolvedImg;
+        }
       } else if (gameState.activeClue.type === 'audio') {
         img.classList.add('hidden');
         audioWrap.classList.remove('hidden');
@@ -1783,147 +2072,63 @@
     }
 
     /* -------------------------------------------------------------
-       ARCADE 3-2-1-GO & PAUSED 60S THINKING
-    -------------------------------------------------------------- */
-    function startArcadeCountdown() {
-      gameState.phase = 'COUNTDOWN';
-      syncState();
-
-      let count = 3;
-      const bigNum = document.getElementById('arcadeBigNumber');
-      bigNum.innerText = count;
-      window.sfxCountdown(count);
-
-      const interval = setInterval(() => {
-        count--;
-        if (count > 0) {
-          bigNum.innerText = count;
-          window.sfxCountdown(count);
-        } else if (count === 0) {
-          bigNum.innerText = "GO!";
-          window.sfxCountdown(0);
-        } else {
-          clearInterval(interval);
-          gameState.phase = 'THINKING';
-          gameState.timer = 60;
-          gameState.timerRunning = false;
-          addEventLog(`[CLUE REVEALED] Thinking phase paused at 60s. Waiting for Host.`);
-          syncState();
-        }
-      }, 1000);
-    }
-
-    /* -------------------------------------------------------------
        HOST MANUAL TIMERS & ACTIONS
     -------------------------------------------------------------- */
     window.hostToggleSelectionTimer = function(start) {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.sfxKeyClick();
-      gameState.selectionTimerRunning = start;
-      if (start) gameState.phase = 'SELECTION';
-      addEventLog(`[HOST] 20s Selection Timer ${start ? 'started' : 'paused'}.`);
-      syncState();
+      sendHostAction('TOGGLE_SELECTION_TIMER', { start: Boolean(start) });
     };
 
     window.hostToggleThinkingTimer = function(start) {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.sfxKeyClick();
-      gameState.timerRunning = start;
-      gameState.isPaused = false;
-      addEventLog(`[HOST] Timer ${start ? 'started' : 'paused'}.`);
-      syncState();
+      sendHostAction('TOGGLE_THINKING_TIMER', { start: Boolean(start) });
     };
 
     window.hostProceedToTyping = function() {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.sfxKeyClick();
-      gameState.phase = 'TYPING';
-      gameState.timer = 15;
-      gameState.timerRunning = true;
-      addEventLog(`[HOST] Advanced to 15s Typing Phase.`);
-      syncState();
+      sendHostAction('PROCEED_TO_TYPING');
     };
 
     window.hostForceTimeoutAnswer = function() {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.sfxKeyClick();
-      gameState.lockedSubmission = {
-        team: gameState.turnSubmittingTeam,
-        player: "SYSTEM_TIMEOUT",
-        text: "[NO ANSWER / TIMEOUT]"
-      };
-      gameState.phase = 'HOST_JUDGING';
-      gameState.timerRunning = false;
-      addEventLog(`[HOST] Ruled as No Answer / Timeout.`);
-      syncState();
+      sendHostAction('FORCE_TIMEOUT_ANSWER');
     };
 
     window.hostAddSeconds = function(sec) {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.sfxKeyClick();
-      if (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT') {
-        gameState.selectionTimer += sec;
-        gameState.phase = 'SELECTION';
-        gameState.selectionTimerRunning = true;
-      } else {
-        gameState.timer += sec;
-        gameState.timerRunning = true;
-        if (gameState.phase === 'THINKING_TIMEOUT') gameState.phase = 'THINKING';
-        if (gameState.phase === 'TYPING_TIMEOUT') gameState.phase = 'TYPING';
-      }
-      addEventLog(`[HOST] Added +${sec}s.`);
-      syncState();
+      sendHostAction('ADD_SECONDS', { sec: Number(sec) || 10 });
     };
 
     window.hostForfeitSelection = function() {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.sfxKeyClick();
-      gameState.selectingTeam = gameState.selectingTeam === 'blue' ? 'red' : 'blue';
-      gameState.selectionTimer = 20;
-      gameState.selectionTimerRunning = false;
-      gameState.phase = 'SELECTION';
-      addEventLog(`[HOST] Selection forfeited. Turn passed to ${gameState.selectingTeam.toUpperCase()}.`);
-      syncState();
+      sendHostAction('FORFEIT_SELECTION');
     };
 
     /* -------------------------------------------------------------
-       TACTICAL "ANSWER OR SKIP" (GLOBAL 5S BANNER)
+       TACTICAL "ANSWER OR SKIP" & EARLY SKIP THINKING
     -------------------------------------------------------------- */
     window.playerTriggerSkipThinking = function() {
-      const isAnswering = (myRole === gameState.turnSubmittingTeam || myRole === 'host');
+      const isAnswering = (myRole === gameState.turnSubmittingTeam || (myRole === 'host' && isHostAuthenticated));
       if (!isAnswering) return;
       window.sfxKeyClick();
-      gameState.phase = gameState.phase === 'STEAL_THINKING' ? 'STEAL_TYPING' : 'TYPING';
-      gameState.timer = 15;
-      gameState.timerRunning = true;
-      addEventLog(`[READY TO ANSWER] ${gameState.turnSubmittingTeam.toUpperCase()} skipped thinking -> 15s Typing starts!`);
-      syncState();
+      if (socket && socket.connected) {
+        socket.emit('game_message', { type: 'SKIP_THINKING' });
+      }
     };
 
     window.playerTriggerTacticalChallenge = function() {
       const defending = gameState.turnSubmittingTeam === 'blue' ? 'red' : 'blue';
-      if (myRole !== defending && myRole !== 'host') return;
-
-      gameState.isTacticalGambleUsed = true;
-      gameState.challengerTeam = defending;
-
-      gameState.tacticalAlert = {
-        active: true,
-        player: myPlayerName,
-        team: defending
-      };
-
-      gameState.phase = 'TYPING';
-      gameState.timer = 15;
-      gameState.timerRunning = true;
-
-      addEventLog(`[⚠️ TACTICAL ALERT] TEAM ${defending.toUpperCase()} chose ANSWER OR SKIP by player: ${myPlayerName}! 60s thinking aborted!`);
-      syncState('tactical');
-
-      setTimeout(() => {
-        if (gameState.tacticalAlert) gameState.tacticalAlert.active = false;
-        syncState();
-      }, 5000);
+      if (myRole !== defending && !(myRole === 'host' && isHostAuthenticated)) return;
+      window.sfxKeyClick();
+      if (socket && socket.connected) {
+        socket.emit('game_message', { type: 'TACTICAL_CHALLENGE' });
+      }
     };
 
     function renderTacticalAlertModal() {
@@ -1938,16 +2143,16 @@
     }
 
     /* -------------------------------------------------------------
-       DUAL-INPUT SYNC & SUBMISSION (ENTER-KEY ENABLED EVERYWHERE)
+       DUAL-INPUT SYNC & SUBMISSION
     -------------------------------------------------------------- */
     const persistentInput = document.getElementById('persistentAnswerInput');
     const modalInput = document.getElementById('modalStageAnswerInput');
 
     function handleLiveTypingInput(val) {
       if (myRole !== gameState.turnSubmittingTeam) return;
+      if (!['TYPING', 'STEAL_TYPING'].includes(gameState.phase)) return;
       window.sfxKeyClick();
 
-      // Mirror both input values seamlessly
       if (persistentInput && persistentInput.value !== val) persistentInput.value = val;
       if (modalInput && modalInput.value !== val) modalInput.value = val;
 
@@ -1960,163 +2165,100 @@
 
     if (persistentInput) {
       persistentInput.addEventListener('input', (e) => handleLiveTypingInput(e.target.value));
-      persistentInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAnswerFromAnywhere(); });
+      persistentInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          submitAnswerFromAnywhere();
+        }
+      });
     }
 
     if (modalInput) {
       modalInput.addEventListener('input', (e) => handleLiveTypingInput(e.target.value));
-      modalInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAnswerFromAnywhere(); });
+      modalInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          submitAnswerFromAnywhere();
+        }
+      });
     }
 
     window.submitAnswerFromAnywhere = function() {
       if (myRole !== gameState.turnSubmittingTeam) return;
       if (!['TYPING', 'STEAL_TYPING'].includes(gameState.phase)) return;
+      if (gameState.lockedSubmission) return;
 
-      const rawVal = modalInput?.value || persistentInput?.value || gameState.liveDraft.text;
+      const activeFocusedVal = (document.activeElement === modalInput || document.activeElement === persistentInput)
+        ? document.activeElement.value
+        : '';
+      const rawVal = activeFocusedVal || gameState.liveDraft.text || modalInput?.value || persistentInput?.value || '';
       const answerVal = rawVal.trim() || "[NO ANSWER]";
       window.sfxKeyClick();
-
-      gameState.lockedSubmission = {
-        team: gameState.turnSubmittingTeam,
-        player: myPlayerName,
-        text: answerVal
-      };
-      gameState.phase = 'HOST_JUDGING';
-      gameState.timerRunning = false;
 
       if (persistentInput) persistentInput.value = '';
       if (modalInput) modalInput.value = '';
 
-      addEventLog(`[ANSWER SUBMITTED] by ${myPlayerName} (${gameState.turnSubmittingTeam.toUpperCase()}): "${answerVal}"`);
-      syncState();
+      if (socket && socket.connected) {
+        socket.emit('game_message', { type: 'SUBMIT_ANSWER', text: answerVal });
+      }
     };
 
     /* -------------------------------------------------------------
-       HOST JUDGING & TACTICAL RESOLUTION
+       HOST JUDGING & OVERRIDES
     -------------------------------------------------------------- */
     window.hostAwardVerdict = function(isCorrect) {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       if (!gameState.activeClue) return;
 
-      const clueVal = gameState.activeClue.value;
-      const answeringTeam = gameState.lockedSubmission ? gameState.lockedSubmission.team : gameState.turnSubmittingTeam;
-      const otherTeam = answeringTeam === 'blue' ? 'red' : 'blue';
-
-      if (isCorrect) {
-        window.sfxCorrect();
-        gameState.scores[answeringTeam] += clueVal;
-        addEventLog(`[JUDGE: CORRECT] +$${clueVal} awarded to ${answeringTeam.toUpperCase()}!`);
-        finishClueRound();
-      } else {
-        window.sfxIncorrect();
-        addEventLog(`[JUDGE: INCORRECT] Submission by ${answeringTeam.toUpperCase()} ruled incorrect.`);
-
-        if (gameState.isTacticalGambleUsed) {
-          if (answeringTeam !== gameState.challengerTeam) {
-            gameState.turnSubmittingTeam = gameState.challengerTeam;
-            gameState.phase = 'STEAL_TYPING';
-            gameState.timer = 15;
-            gameState.timerRunning = true;
-            gameState.lockedSubmission = null;
-            gameState.liveDraft = { author: "", text: "" };
-            addEventLog(`[CHALLENGE STEAL] ${gameState.challengerTeam.toUpperCase()} has 15s to answer. (-$${clueVal} if missed)`);
-            syncState('incorrect');
-          } else {
-            gameState.scores[gameState.challengerTeam] -= clueVal;
-            addEventLog(`[⚠️ FULL PENALTY] ${gameState.challengerTeam.toUpperCase()} failed tactical challenge (-$${clueVal})!`);
-            finishClueRound('incorrect');
-          }
-        } else {
-          if (answeringTeam === gameState.selectingTeam) {
-            gameState.turnSubmittingTeam = otherTeam;
-            gameState.phase = 'STEAL_THINKING';
-            gameState.timer = 20;
-            gameState.timerRunning = false;
-            gameState.lockedSubmission = null;
-            gameState.liveDraft = { author: "", text: "" };
-            addEventLog(`[NORMAL STEAL] Opportunity shifts to ${otherTeam.toUpperCase()} (20s thinking, $0 miss).`);
-            syncState('incorrect');
-          } else {
-            addEventLog(`[STEAL FAILED] Neither team answered correctly. $0 awarded.`);
-            finishClueRound('incorrect');
-          }
-        }
+      if (gameState.phase !== 'HOST_JUDGING') {
+        window.showDosModal(
+          "CONFIRM EARLY VERDICT",
+          `No answer has been locked in yet (${gameState.phase.replace(/_/g, ' ')}). Rule ${gameState.turnSubmittingTeam?.toUpperCase()} as ${isCorrect ? 'CORRECT' : 'INCORRECT'} now?`,
+          () => sendHostAction('AWARD_VERDICT', { isCorrect: Boolean(isCorrect) }),
+          () => {}
+        );
+        return;
       }
+
+      sendHostAction('AWARD_VERDICT', { isCorrect: Boolean(isCorrect) });
     };
 
-    function finishClueRound(sfxType = 'correct') {
-      if (gameState.activeClue) {
-        const key = `${gameState.activeClue.catIdx}-${gameState.activeClue.clueIdx}`;
-        if (!gameState.clearedClues.includes(key)) gameState.clearedClues.push(key);
-      }
-
-      document.getElementById('modalClueStage').classList.add('hidden');
-      isClueMinimized = false;
-
-      gameState.selectingTeam = gameState.selectingTeam === 'blue' ? 'red' : 'blue';
-      gameState.selectionTimer = 20;
-      gameState.selectionTimerRunning = false;
-      gameState.phase = 'SELECTION';
-      gameState.activeClue = null;
-      gameState.lockedSubmission = null;
-      gameState.liveDraft = { author: "", text: "" };
-      gameState.isTacticalGambleUsed = false;
-      gameState.challengerTeam = null;
-
-      addEventLog(`[TURN SWITCH] Selection strictly passes to TEAM ${gameState.selectingTeam.toUpperCase()}.`);
-
-      if (gameState.clearedClues.length >= 30) {
-        setTimeout(triggerHostEndMatch, 1000);
-      }
-      syncState(sfxType);
-    }
-
-    /* -------------------------------------------------------------
-       HOST OVERRIDES & UTILITIES
-    -------------------------------------------------------------- */
     window.triggerHostPause = function() {
-      if (myRole !== 'host') return;
-      gameState.isPaused = !gameState.isPaused;
+      if (myRole !== 'host' || !isHostAuthenticated) {
+        window.showDosModal("HOST AUTHORITY REQUIRED", "Only the authenticated Host Master can pause or resume the match clock.");
+        return;
+      }
       window.sfxKeyClick();
-      addEventLog(`[SYSTEM] Match ${gameState.isPaused ? 'PAUSED' : 'RESUMED'} by Host.`);
-      syncState();
+      sendHostAction('TOGGLE_PAUSE');
     };
 
     window.triggerHostVoidSubmission = function() {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
+      if (!gameState.lockedSubmission) return;
       window.showDosModal(
         "CONFIRM VOID SUBMISSION",
         "Erase current locked submission, refund the 15-second timer, and re-open typing input for the team?",
         () => {
           window.sfxKeyClick();
-          gameState.lockedSubmission = null;
-          gameState.liveDraft = { author: "", text: "" };
-          gameState.phase = 'TYPING';
-          gameState.timer = 15;
-          gameState.timerRunning = true;
-          addEventLog(`[HOST VETO] Submission voided. 15s refunded to ${gameState.turnSubmittingTeam.toUpperCase()}`);
-          syncState();
+          sendHostAction('VOID_SUBMISSION');
         },
         () => {}
       );
     };
 
     window.triggerHostUndoClue = function() {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.showDosModal(
         "CONFIRM RE-OPEN CLUE",
         "Re-open active clue into 60s Thinking phase?",
         () => {
           window.sfxKeyClick();
           if (gameState.activeClue) {
-            gameState.phase = 'THINKING';
-            gameState.timer = 60;
-            gameState.timerRunning = false;
-            gameState.lockedSubmission = null;
-            gameState.isTacticalGambleUsed = false;
             isClueMinimized = false;
-            addEventLog("[UNDO] Host reverted clue back to 60s Thinking phase.");
-            syncState();
+            stopExternalAudio();
+            sendHostAction('UNDO_CLUE');
           }
         },
         () => {}
@@ -2124,88 +2266,102 @@
     };
 
     window.hostAdjustQuickScore = function(team, delta) {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.sfxKeyClick();
-      gameState.scores[team] += delta;
-      addEventLog(`[OVERRIDE] Adjusted ${team.toUpperCase()} score by ${delta >= 0 ? '+' : ''}${delta}`);
-      syncState();
+      sendHostAction('ADJUST_SCORE', { team, delta: Number(delta) || 0 });
     };
 
     window.hostApplyManualScore = function(team) {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       const input = document.getElementById(team === 'blue' ? 'hostOverrideBlueInput' : 'hostOverrideRedInput');
       const val = parseInt(input.value, 10) || 0;
       window.sfxKeyClick();
-      gameState.scores[team] = val;
-      addEventLog(`[OVERRIDE] Host manually set ${team.toUpperCase()} balance to $${val}`);
-      syncState();
+      sendHostAction('SET_SCORE', { team, val });
     };
 
     window.triggerHostResetMatch = function() {
-      if (myRole !== 'host') return;
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.showDosModal(
         "CONFIRM MATCH RESET",
         "Reset entire match, board, and scores back to zero?",
         () => {
           window.sfxKeyClick();
-          gameState = {
-            scores: { blue: 0, red: 0 },
-            selectingTeam: 'blue',
-            selectionTimer: 20,
-            selectionTimerRunning: false,
-            clearedClues: [],
-            phase: 'SELECTION',
-            activeClue: null,
-            pendingHostClue: null,
-            timer: 60,
-            timerRunning: false,
-            isPaused: false,
-            isTacticalGambleUsed: false,
-            challengerTeam: null,
-            turnSubmittingTeam: null,
-            liveDraft: { author: "", text: "" },
-            lockedSubmission: null,
-            lastSelectionAttribution: null,
-            tacticalAlert: null,
-            logs: ["[RESET] Match rebooted by Host. Board restored."],
-            roster: gameState.roster
-          };
           isClueMinimized = false;
-          syncState();
+          victoryDismissedForGame = false;
+          clearShuffleTimersAndStyles();
+          stopExternalAudio();
+          sendHostAction('RESET_MATCH');
         },
         () => {}
       );
     };
 
     window.triggerHostEndMatch = function() {
-      window.sfxVictory();
-      gameState.phase = 'GAME_OVER';
-
-      const winner = gameState.scores.blue > gameState.scores.red
-        ? "TEAM BLUE"
-        : gameState.scores.red > gameState.scores.blue
-        ? "TEAM RED"
-        : "TIE (BOTH SQUADS)";
-
-      document.getElementById('victoryWinnerBanner').innerText = `CHAMPION: ${winner}`;
-      document.getElementById('victoryFinalScores').innerText = `FINAL ASSETS: BLUE: $${gameState.scores.blue}  │  RED: $${gameState.scores.red}`;
-      document.getElementById('modalVictory').classList.remove('hidden');
-      syncState('victory');
+      if (myRole !== 'host' || !isHostAuthenticated) return;
+      window.sfxKeyClick();
+      victoryDismissedForGame = false;
+      stopExternalAudio();
+      sendHostAction('END_MATCH');
     };
 
+    function renderVictoryModal() {
+      const modal = document.getElementById('modalVictory');
+      const btnReset = document.getElementById('btnVictoryReset');
+      if (gameState.phase === 'GAME_OVER' && !victoryDismissedForGame) {
+        const winner = gameState.scores.blue > gameState.scores.red
+          ? "TEAM BLUE"
+          : gameState.scores.red > gameState.scores.blue
+          ? "TEAM RED"
+          : "TIE (BOTH SQUADS)";
+
+        document.getElementById('victoryWinnerBanner').innerText = `CHAMPION: ${winner}`;
+        document.getElementById('victoryFinalScores').innerText = `FINAL ASSETS: BLUE: $${gameState.scores.blue}  │  RED: $${gameState.scores.red}`;
+        if (myRole === 'host' && isHostAuthenticated) {
+          btnReset.classList.remove('hidden');
+        } else {
+          btnReset.classList.add('hidden');
+        }
+        modal.classList.remove('hidden');
+      } else if (gameState.phase !== 'GAME_OVER') {
+        modal.classList.add('hidden');
+      }
+    }
+
     window.closeVictoryModal = function() {
+      victoryDismissedForGame = true;
       document.getElementById('modalVictory').classList.add('hidden');
     };
 
     /* -------------------------------------------------------------
-       DECK BUILDER / JSON MANAGER
+       DECK BUILDER / JSON MANAGER & BASE64 UPLOADER
     -------------------------------------------------------------- */
     let activeDeckTab = 0;
 
+    function formatBase64Summary(dataUri) {
+      const mimeMatch = /^data:([^;]+);base64,/i.exec(dataUri);
+      const mime = mimeMatch ? mimeMatch[1] : 'media/file';
+      const approxBytes = Math.round((dataUri.length * 3) / 4);
+      const sizeStr = approxBytes > 1048576
+        ? `${(approxBytes / 1048576).toFixed(2)} MB`
+        : `${Math.max(1, Math.round(approxBytes / 1024))} KB`;
+      return `[LOCAL FILE LOADED: ${mime} (${sizeStr})]`;
+    }
+
     window.openDeckModal = function() {
       window.sfxKeyClick();
+      if (myRole !== 'host' || !isHostAuthenticated) {
+        window.showDosModal(
+          "CONFIDENTIAL FAT TABLE LOCKED",
+          "Access Denied: The Clue Deck Manager contains confidential official answers and is restricted to the authenticated Host Master (PIN required)."
+        );
+        return;
+      }
       activeDeckTab = 0;
-      renderDeckEditor();
+      if (!hostEditableDeck) {
+        sendHostAction('REQUEST_FULL_DECK');
+      } else {
+        renderDeckEditor();
+      }
       document.getElementById('modalDeckManager').classList.remove('hidden');
     };
 
@@ -2214,15 +2370,61 @@
       document.getElementById('modalDeckManager').classList.add('hidden');
     };
 
+    window.appHandleMediaFileUpload = function(event, idx) {
+      const file = event.target.files[0];
+      if (!file || !hostEditableDeck) return;
+
+      if (file.size > 25 * 1024 * 1024) {
+        window.sfxIncorrect();
+        window.showDosModal("FILE SIZE LIMIT", "Please select an audio or image file under 25 MB.");
+        event.target.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        hostEditableDeck[activeDeckTab].clues[idx].mediaUrl = dataUrl;
+
+        const mediaInput = document.getElementById(`deckMediaInput_${idx}`);
+        if (mediaInput) {
+          mediaInput.value = formatBase64Summary(dataUrl);
+          mediaInput.dataset.hasBase64 = 'true';
+        }
+
+        const typeSelect = document.getElementById(`deckTypeSelect_${idx}`);
+        if (typeSelect) {
+          if (file.type.startsWith('audio/')) {
+            typeSelect.value = 'audio';
+            hostEditableDeck[activeDeckTab].clues[idx].type = 'audio';
+          } else if (file.type.startsWith('image/')) {
+            typeSelect.value = 'image';
+            hostEditableDeck[activeDeckTab].clues[idx].type = 'image';
+          }
+        }
+        event.target.value = '';
+        window.sfxCorrect();
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.onDeckMediaInputManualEdit = function(idx) {
+      const mediaInput = document.getElementById(`deckMediaInput_${idx}`);
+      if (mediaInput) {
+        mediaInput.dataset.hasBase64 = 'false';
+      }
+    };
+
     function renderDeckEditor() {
+      if (!hostEditableDeck) return;
       const tabsBox = document.getElementById('deckCategoryTabs');
-      tabsBox.innerHTML = gameDeck.map((cat, i) => `
+      tabsBox.innerHTML = hostEditableDeck.map((cat, i) => `
         <button onclick="switchDeckTab(${i})" class="px-2 py-0.5 border text-xs font-bold ${activeDeckTab === i ? 'bg-yellow-300 text-black border-white' : 'bg-[#000060] text-cyan-300 border-cyan-400'}">
           CAT 0${i + 1}: ${escapeHtml(cat.category)}
         </button>
       `).join('');
 
-      const cat = gameDeck[activeDeckTab];
+      const cat = hostEditableDeck[activeDeckTab];
       const editorBox = document.getElementById('deckCluesEditor');
 
       let html = `
@@ -2233,6 +2435,10 @@
       `;
 
       cat.clues.forEach((clue, idx) => {
+        const rawMedia = String(clue.mediaUrl || '');
+        const isBase64 = rawMedia.startsWith('data:');
+        const displayMedia = isBase64 ? formatBase64Summary(rawMedia) : rawMedia;
+
         html += `
           <div class="border border-cyan-400 p-2 bg-[#000078] space-y-1">
             <div class="flex justify-between items-center text-yellow-300 font-bold">
@@ -2242,7 +2448,7 @@
                 <select id="deckTypeSelect_${idx}" class="bg-black text-cyan-300 border border-cyan-400 p-0.5 text-xs">
                   <option value="text" ${clue.type === 'text' ? 'selected' : ''}>TEXT</option>
                   <option value="image" ${clue.type === 'image' ? 'selected' : ''}>IMAGE (PHOTO)</option>
-                  <option value="audio" ${clue.type === 'audio' ? 'selected' : ''}>AUDIO (URL/SYNTH)</option>
+                  <option value="audio" ${clue.type === 'audio' ? 'selected' : ''}>AUDIO (URL/SYNTH/FILE)</option>
                 </select>
               </div>
             </div>
@@ -2255,8 +2461,14 @@
               <input type="text" id="deckAInput_${idx}" value="${escapeHtml(clue.a)}" class="bg-black text-yellow-300 border border-cyan-400 p-1 w-full font-mono text-xs">
             </div>
             <div>
-              <span class="text-gray-300">MEDIA URL (FOR IMAGE / AUDIO):</span>
-              <input type="text" id="deckMediaInput_${idx}" value="${escapeHtml(clue.mediaUrl || '')}" placeholder="https://image-url or audio url" class="bg-black text-cyan-200 border border-cyan-400 p-1 w-full font-mono text-xs">
+              <span class="text-gray-300">MEDIA ASSET (FILE UPLOAD OR URL):</span>
+              <div class="flex gap-2 mt-1">
+                <input type="text" id="deckMediaInput_${idx}" data-has-base64="${isBase64 ? 'true' : 'false'}" oninput="onDeckMediaInputManualEdit(${idx})" value="${escapeHtml(displayMedia)}" placeholder="Paste URL or click [UPLOAD FILE] ->" class="bg-black text-cyan-200 border border-cyan-400 p-1 flex-1 font-mono text-xs">
+                <label class="dos-btn dos-btn-yellow px-2 py-0.5 cursor-pointer text-xs flex items-center whitespace-nowrap">
+                  [ 📁 UPLOAD FILE ]
+                  <input type="file" accept="image/*,audio/*" class="hidden" onchange="appHandleMediaFileUpload(event, ${idx})">
+                </label>
+              </div>
             </div>
           </div>
         `;
@@ -2272,11 +2484,12 @@
     };
 
     function saveActiveDeckTab() {
+      if (!hostEditableDeck) return;
       const catInput = document.getElementById('deckCatInput');
       if (!catInput) return;
-      gameDeck[activeDeckTab].category = catInput.value.trim() || `CAT 0${activeDeckTab + 1}`;
+      hostEditableDeck[activeDeckTab].category = catInput.value.trim() || `CAT 0${activeDeckTab + 1}`;
 
-      gameDeck[activeDeckTab].clues.forEach((clue, idx) => {
+      hostEditableDeck[activeDeckTab].clues.forEach((clue, idx) => {
         const qElem = document.getElementById(`deckQInput_${idx}`);
         const aElem = document.getElementById(`deckAInput_${idx}`);
         const typeElem = document.getElementById(`deckTypeSelect_${idx}`);
@@ -2285,32 +2498,36 @@
         if (qElem) clue.q = qElem.value;
         if (aElem) clue.a = aElem.value;
         if (typeElem) clue.type = typeElem.value;
-        if (mediaElem) clue.mediaUrl = mediaElem.value;
+        if (mediaElem && mediaElem.dataset.hasBase64 !== 'true') {
+          clue.mediaUrl = mediaElem.value.trim();
+        }
       });
     }
 
     window.saveAndApplyDeckChanges = function() {
+      if (myRole !== 'host' || !isHostAuthenticated || !hostEditableDeck) return;
       saveActiveDeckTab();
-      localStorage.setItem('dos_jeopardy_deck', JSON.stringify(gameDeck));
-      window.sfxCorrect();
+      sendHostAction('UPDATE_DECK', { deck: hostEditableDeck });
       closeDeckModal();
-      addEventLog("[DECK] Clue deck updated and applied.");
-      renderAll();
     };
 
     window.exportDeckToJson = function() {
+      if (!hostEditableDeck) return;
       saveActiveDeckTab();
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(gameDeck, null, 2));
+      const blob = new Blob([JSON.stringify(hostEditableDeck, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.setAttribute("href", dataStr);
+      a.setAttribute("href", url);
       a.setAttribute("download", "dos_jeopardy_deck.json");
       document.body.appendChild(a);
       a.click();
       a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       window.sfxKeyClick();
     };
 
     window.importDeckFromJson = function(e) {
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
@@ -2318,12 +2535,9 @@
         try {
           const parsed = JSON.parse(event.target.result);
           if (Array.isArray(parsed) && parsed.length === 6) {
-            gameDeck = parsed;
-            localStorage.setItem('dos_jeopardy_deck', JSON.stringify(gameDeck));
-            window.sfxCorrect();
+            hostEditableDeck = parsed;
             renderDeckEditor();
-            renderAll();
-            addEventLog("[DECK] Custom JSON trivia deck loaded.");
+            sendHostAction('UPDATE_DECK', { deck: hostEditableDeck });
           } else {
             window.sfxIncorrect();
             window.showDosModal("DECK ERROR", "Invalid deck format. File must contain exactly 6 categories.");
@@ -2332,68 +2546,101 @@
           window.sfxIncorrect();
           window.showDosModal("PARSING ERROR", "Failed to parse JSON trivia file.");
         }
+        e.target.value = '';
       };
       reader.readAsText(file);
     };
 
     window.restoreDefaultDeck = function() {
+      if (myRole !== 'host' || !isHostAuthenticated) return;
       window.showDosModal(
         "CONFIRM RESTORE",
         "Restore factory default trivia questions and categories?",
         () => {
-          gameDeck = JSON.parse(JSON.stringify(DEFAULT_DECK));
-          localStorage.setItem('dos_jeopardy_deck', JSON.stringify(gameDeck));
-          window.sfxCorrect();
-          renderDeckEditor();
-          renderAll();
-          addEventLog("[DECK] Factory default trivia deck restored.");
+          sendHostAction('UPDATE_DECK', { restoreDefault: true });
         },
         () => {}
       );
     };
 
     /* -------------------------------------------------------------
-       KEYBOARD SHORTCUTS
+       ISOLATED KEYBOARD SHORTCUTS
     -------------------------------------------------------------- */
     window.addEventListener('keydown', (e) => {
-      // Don't intercept shortcuts if typing in any text input
-      if (e.target.tagName === 'INPUT' && e.key === 'Enter') return;
+      const isFormElement = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName);
+      const msgModalOpen = !document.getElementById('modalDosMessage').classList.contains('hidden');
+      const lobbyModalOpen = !document.getElementById('modalLobby').classList.contains('hidden');
+      const deckModalOpen = !document.getElementById('modalDeckManager').classList.contains('hidden');
+
+      if (msgModalOpen) {
+        if (e.key === 'Enter' && activeModalConfirmFn) {
+          e.preventDefault();
+          activeModalConfirmFn();
+        } else if (e.key === 'Escape' && activeModalCancelFn) {
+          e.preventDefault();
+          activeModalCancelFn();
+        }
+        return;
+      }
+
+      if (lobbyModalOpen && e.target.id === 'lobbyHostPinInput' && e.key === 'Enter') {
+        e.preventDefault();
+        joinRole('host');
+        return;
+      }
+
+      if (isFormElement) {
+        if (e.key === 'Escape') {
+          e.target.blur();
+        }
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        if (deckModalOpen) { closeDeckModal(); return; }
+        if (lobbyModalOpen) { closeLobbyModal(); return; }
+        if (myRole === 'host' && isHostAuthenticated && gameState.phase === 'HOST_CONFIRM') {
+          e.preventDefault();
+          hostConfirmClueExecution(false);
+          return;
+        }
+      }
+
+      if (e.key === 'Enter') {
+        if (!deckModalOpen && !lobbyModalOpen && myRole === 'host' && isHostAuthenticated && gameState.phase === 'HOST_CONFIRM') {
+          e.preventDefault();
+          hostConfirmClueExecution(true);
+          return;
+        }
+      }
 
       if (e.key === 'F1') { e.preventDefault(); openDeckModal(); }
       if (e.key === 'F2') { e.preventDefault(); triggerHostPause(); }
       if (e.key === 'F3') { e.preventDefault(); quickSwitchView('board'); }
       if (e.key === 'F4') { e.preventDefault(); quickSwitchView('host'); }
-      if (e.key === 'F5') { e.preventDefault(); joinRole('blue'); }
       if (e.key === 'F6') { e.preventDefault(); joinRole('red'); }
-      if (e.key === 'Escape') {
-        if (myRole === 'host' && gameState.phase === 'HOST_CONFIRM') {
-          hostConfirmClueExecution(false);
-        }
-        document.getElementById('modalDeckManager').classList.add('hidden');
-        document.getElementById('modalLobby').classList.add('hidden');
-        closeDosMessageModal();
-      }
-      if (e.key === 'Enter') {
-        if (myRole === 'host' && gameState.phase === 'HOST_CONFIRM') {
-          hostConfirmClueExecution(true);
-        }
-      }
     });
 
     function escapeHtml(str) {
-      if (!str) return '';
+      if (str === null || typeof str === 'undefined') return '';
       return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
-    // Initialize application
     window.addEventListener('load', () => {
-      switchViewRole(myRole);
+      const nameInput = document.getElementById('lobbyPlayerNameInput');
+      if (nameInput) nameInput.value = myPlayerName;
+
+      applyRoleUI(myRole);
       renderAll();
-      addEventLog("[READY] DOS Defrag Terminal Online.");
+
+      if (!hasSavedRole) {
+        openLobbyModal();
+      }
     });
   </script>
 </body>
