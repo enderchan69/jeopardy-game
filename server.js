@@ -8,13 +8,13 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' },
   pingInterval: 10000,
-  pingTimeout: 20000, // Extended to 20s to prevent false disconnects during large deck uploads
-  maxHttpBufferSize: 1e8 // 100 MB buffer for audio/image base64 payloads
+  pingTimeout: 20000, // Extended to 20s to prevent false disconnects during large Base64 deck uploads
+  maxHttpBufferSize: 1e8 // 100 MB buffer for audio/image Base64 payloads
 });
 
 const HOST_PIN = process.env.HOST_PIN || '1337';
 
-// Security Fix: Serve only index.html & health check; never expose server.js or package.json
+// Security Isolation: Serve only index.html & health check; never expose server.js or package.json
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -95,7 +95,31 @@ const DEFAULT_DECK = [
 
 let authoritativeDeck = JSON.parse(JSON.stringify(DEFAULT_DECK));
 
-// Strip confidential `a`, `q`, and heavy `mediaUrl` strings from public board deck.
+// Normalize any incoming 6-category deck so all 6x5 clues are guaranteed non-null objects
+function sanitizeDeckStructure(rawDeck) {
+  const tiers = [200, 400, 600, 800, 1000];
+  return [0, 1, 2, 3, 4, 5].map((catIdx) => {
+    const rawCat = (Array.isArray(rawDeck) && rawDeck[catIdx] && typeof rawDeck[catIdx] === 'object')
+      ? rawDeck[catIdx]
+      : DEFAULT_DECK[catIdx];
+    const rawClues = Array.isArray(rawCat.clues) ? rawCat.clues : [];
+    return {
+      category: String(rawCat.category || `CAT 0${catIdx + 1}`).trim().slice(0, 40) || `CAT 0${catIdx + 1}`,
+      clues: tiers.map((val, cIdx) => {
+        const c = (rawClues[cIdx] && typeof rawClues[cIdx] === 'object') ? rawClues[cIdx] : {};
+        return {
+          value: val,
+          type: ['text', 'image', 'audio'].includes(c.type) ? c.type : 'text',
+          q: String(c.q ?? ''),
+          a: String(c.a ?? ''),
+          mediaUrl: String(c.mediaUrl ?? '')
+        };
+      })
+    };
+  });
+}
+
+// Strip confidential `a`, `q`, and heavy `mediaUrl` strings from public board deck
 function getPublicDeck() {
   return authoritativeDeck.map(cat => ({
     category: cat.category,
@@ -108,6 +132,7 @@ function getPublicDeck() {
 
 function createInitialGameState() {
   return {
+    isGameLaunched: false, // Default to Standby Waiting Room
     scores: { blue: 0, red: 0 },
     selectingTeam: 'blue',
     selectionTimer: 20,
@@ -131,7 +156,7 @@ function createInitialGameState() {
     tacticalAlert: null,
     arcadeCount: 3,
     mediaProgress: 0,
-    logs: ["[00:00:00] SERVER ONLINE. Ready for match."],
+    logs: ["[00:00:00] SERVER ONLINE. Ready in Standby Lobby."],
     roster: {
       host: null,
       blue: [],
@@ -151,6 +176,16 @@ let graceTimeout = null;
 let countdownInterval = null;
 let tacticalAlertTimeout = null;
 let shuffleFallbackTimeout = null;
+
+function clearTacticalAlert() {
+  if (tacticalAlertTimeout) {
+    clearTimeout(tacticalAlertTimeout);
+    tacticalAlertTimeout = null;
+  }
+  if (gameState.tacticalAlert) {
+    gameState.tacticalAlert = null;
+  }
+}
 
 function clearPhaseTimers() {
   if (mediaInterval) { clearInterval(mediaInterval); mediaInterval = null; }
@@ -201,7 +236,13 @@ function getActiveClueMediaUrl() {
   return cat.clues[gameState.activeClue.clueIdx].mediaUrl || '';
 }
 
-function emitStateToSocket(socket, sfx = null, includeDeck = false, includeMedia = false) {
+function emitStateToSocket(
+  socket,
+  sfx = null,
+  includeDeck = false,
+  includeMedia = false,
+  includeFullDeckForHost = true
+) {
   const client = connectedClients.get(socket.id);
   const isHost = Boolean(client && client.isHost && client.role === 'host');
   const payload = {
@@ -212,7 +253,9 @@ function emitStateToSocket(socket, sfx = null, includeDeck = false, includeMedia
   };
   if (includeDeck) {
     payload.publicDeck = getPublicDeck();
-    if (isHost) payload.fullDeck = authoritativeDeck;
+    if (isHost && includeFullDeckForHost) {
+      payload.fullDeck = authoritativeDeck;
+    }
   }
   if (includeMedia || includeDeck) {
     const mediaUrl = getActiveClueMediaUrl();
@@ -221,10 +264,17 @@ function emitStateToSocket(socket, sfx = null, includeDeck = false, includeMedia
   socket.emit('game_message', payload);
 }
 
-function broadcastState(sfx = null, includeDeck = false, includeMedia = false) {
+function broadcastState(
+  sfx = null,
+  includeDeck = false,
+  includeMedia = false,
+  includeFullDeckForHost = true
+) {
   for (const [socketId] of connectedClients) {
     const sock = io.sockets.sockets.get(socketId);
-    if (sock) emitStateToSocket(sock, sfx, includeDeck, includeMedia);
+    if (sock) {
+      emitStateToSocket(sock, sfx, includeDeck, includeMedia, includeFullDeckForHost);
+    }
   }
 }
 
@@ -238,7 +288,7 @@ function startServerArcadeCountdown(sendInitialMedia = false) {
   broadcastState('countdown_tick', false, sendInitialMedia);
 
   countdownInterval = setInterval(() => {
-    if (gameState.isPaused) return;
+    if (gameState.isPaused || !gameState.isGameLaunched) return;
     gameState.arcadeCount--;
     if (gameState.arcadeCount > 0) {
       broadcastState('countdown_tick');
@@ -265,7 +315,7 @@ function startServerMediaSequence() {
   let ticks = 0;
   const totalTicks = 25;
   mediaInterval = setInterval(() => {
-    if (gameState.isPaused) return;
+    if (gameState.isPaused || !gameState.isGameLaunched) return;
     ticks++;
     gameState.mediaProgress = Math.min(100, Math.round((ticks / totalTicks) * 100));
     broadcastState(ticks % 5 === 0 ? 'media_pulse' : null);
@@ -282,7 +332,7 @@ function runServerMediaGrace(secondsLeft) {
   if (secondsLeft > 0) {
     broadcastState('grace_beep');
     graceTimeout = setTimeout(() => {
-      if (gameState.phase !== 'MEDIA_PLAYING') return;
+      if (gameState.phase !== 'MEDIA_PLAYING' || !gameState.isGameLaunched) return;
       runServerMediaGrace(secondsLeft - 1);
     }, 1000);
   } else {
@@ -292,6 +342,7 @@ function runServerMediaGrace(secondsLeft) {
 
 function finishClueRound(sfxType = 'correct') {
   clearPhaseTimers();
+  clearTacticalAlert();
   if (gameState.activeClue) {
     const key = `${gameState.activeClue.catIdx}-${gameState.activeClue.clueIdx}`;
     if (!gameState.clearedClues.includes(key)) gameState.clearedClues.push(key);
@@ -329,7 +380,10 @@ function lockTileForHostConfirmation(catIdx, clueIdx, playerAttributionName) {
     shuffleFallbackTimeout = null;
   }
 
-  const clue = authoritativeDeck[catIdx].clues[clueIdx];
+  const cat = authoritativeDeck[catIdx];
+  const clue = cat && cat.clues ? cat.clues[clueIdx] : null;
+  if (!clue) return;
+
   gameState.pendingHostClue = {
     catIdx,
     clueIdx,
@@ -340,7 +394,7 @@ function lockTileForHostConfirmation(catIdx, clueIdx, playerAttributionName) {
   gameState.lastSelectionAttribution = {
     team: gameState.selectingTeam,
     player: playerAttributionName,
-    catName: authoritativeDeck[catIdx].category,
+    catName: cat.category,
     val: clue.value
   };
 
@@ -351,7 +405,7 @@ function lockTileForHostConfirmation(catIdx, clueIdx, playerAttributionName) {
   gameState.isShuffleRunning = false;
   gameState.phase = 'HOST_CONFIRM';
 
-  addServerLog(`[TILE CLICKED] ${authoritativeDeck[catIdx].category} $${clue.value} by ${playerAttributionName}. Awaiting Host confirmation.`);
+  addServerLog(`[TILE CLICKED] ${cat.category} $${clue.value} by ${playerAttributionName}. Awaiting Host confirmation.`);
   broadcastState();
 }
 
@@ -360,6 +414,7 @@ function lockTileForHostConfirmation(catIdx, clueIdx, playerAttributionName) {
 -------------------------------------------------------------- */
 setInterval(() => {
   if (
+    !gameState.isGameLaunched ||
     gameState.isPaused ||
     gameState.isShuffleRunning ||
     gameState.phase === 'HOST_CONFIRM' ||
@@ -403,7 +458,7 @@ io.on('connection', (socket) => {
   const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address || socket.id;
   connectedClients.set(socket.id, { user: `Operator_${socket.id.slice(0, 4)}`, role: 'board', isHost: false });
 
-  emitStateToSocket(socket, null, true, true);
+  emitStateToSocket(socket, null, true, true, true);
 
   socket.on('game_message', (msg) => {
     if (!msg || typeof msg !== 'object') return;
@@ -411,9 +466,6 @@ io.on('connection', (socket) => {
     if (!client) return;
 
     switch (msg.type) {
-      /* -------------------------------------------------------
-         1. ROSTER & ROLE MANAGEMENT WITH PIN VERIFICATION
-      -------------------------------------------------------- */
       case 'ROSTER_JOIN': {
         const cleanUser = sanitizeName(msg.user || client.user);
         const targetRole = String(msg.role || 'board');
@@ -432,19 +484,22 @@ io.on('connection', (socket) => {
 
           const providedPin = String(msg.pin || '');
           if (client.isHost || providedPin === HOST_PIN) {
+            const wasAlreadyHost = client.isHost;
             client.isHost = true;
             client.role = 'host';
             pinAttemptsByIp.delete(clientIp);
             rebuildRoster();
-            addServerLog(`[AUTH] Host console accessed by ${cleanUser}.`);
+            if (!wasAlreadyHost) {
+              addServerLog(`[AUTH] Host console accessed by ${cleanUser}.`);
+            }
             socket.emit('game_message', {
               type: 'AUTH_RESULT',
               success: true,
               role: 'host',
               user: cleanUser,
-              fullDeck: authoritativeDeck
+              fullDeck: wasAlreadyHost ? undefined : authoritativeDeck
             });
-            broadcastState(null, true, true);
+            broadcastState(null, true, true, false);
           } else {
             lockRecord.count += 1;
             if (lockRecord.count >= 3) {
@@ -477,10 +532,8 @@ io.on('connection', (socket) => {
         break;
       }
 
-      /* -------------------------------------------------------
-         2. ATOMIC TILE SELECTION
-      -------------------------------------------------------- */
       case 'SELECT_TILE': {
+        if (!gameState.isGameLaunched) return;
         if (gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') return;
         if (gameState.isShuffleRunning && !msg.fromRoulette) return;
 
@@ -501,10 +554,8 @@ io.on('connection', (socket) => {
         break;
       }
 
-      /* -------------------------------------------------------
-         3. RANDOM SECTOR ROULETTE RELAY
-      -------------------------------------------------------- */
       case 'START_SHUFFLE_SCAN': {
+        if (!gameState.isGameLaunched) return;
         if (gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') return;
         if (gameState.isShuffleRunning) return;
         const canTrigger = (client.role === gameState.selectingTeam) || (client.role === 'host' && client.isHost);
@@ -546,17 +597,15 @@ io.on('connection', (socket) => {
         const callerName = client.user;
         if (shuffleFallbackTimeout) clearTimeout(shuffleFallbackTimeout);
         shuffleFallbackTimeout = setTimeout(() => {
-          if (gameState.isShuffleRunning && (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT')) {
+          if (gameState.isShuffleRunning && gameState.isGameLaunched && (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT')) {
             lockTileForHostConfirmation(chosenTarget.catIdx, chosenTarget.valIdx, callerName);
           }
         }, 5750);
         break;
       }
 
-      /* -------------------------------------------------------
-         4. PLAYER TACTICAL ACTIONS
-      -------------------------------------------------------- */
       case 'SKIP_THINKING': {
+        if (!gameState.isGameLaunched) return;
         if (gameState.phase !== 'THINKING' && gameState.phase !== 'STEAL_THINKING') return;
         const isAnswering = (client.role === gameState.turnSubmittingTeam) || (client.role === 'host' && client.isHost);
         if (!isAnswering) return;
@@ -570,6 +619,7 @@ io.on('connection', (socket) => {
       }
 
       case 'TACTICAL_CHALLENGE': {
+        if (!gameState.isGameLaunched) return;
         if (gameState.phase !== 'THINKING' || gameState.isTacticalGambleUsed) return;
         const defendingTeam = gameState.turnSubmittingTeam === 'blue' ? 'red' : 'blue';
         const canChallenge = (client.role === defendingTeam) || (client.role === 'host' && client.isHost);
@@ -599,10 +649,8 @@ io.on('connection', (socket) => {
         break;
       }
 
-      /* -------------------------------------------------------
-         5. LIVE DRAFT MIRRORING & ANSWER SUBMISSION
-      -------------------------------------------------------- */
       case 'LIVE_KEY': {
+        if (!gameState.isGameLaunched) return;
         if (client.role !== gameState.turnSubmittingTeam) return;
         if (!['TYPING', 'STEAL_TYPING'].includes(gameState.phase)) return;
         const text = String(msg.liveDraft?.text || '').slice(0, 140);
@@ -612,9 +660,13 @@ io.on('connection', (socket) => {
       }
 
       case 'SUBMIT_ANSWER': {
+        if (!gameState.isGameLaunched) return;
         if (client.role !== gameState.turnSubmittingTeam) return;
         if (!['TYPING', 'STEAL_TYPING'].includes(gameState.phase)) return;
         if (gameState.lockedSubmission) return;
+
+        // Immediately dismiss any active 5s tactical alert banner so Host can judge unobstructed
+        clearTacticalAlert();
 
         const rawText = String(msg.text ?? gameState.liveDraft.text ?? '').trim().slice(0, 140);
         const answerVal = rawText || "[NO ANSWER]";
@@ -632,20 +684,48 @@ io.on('connection', (socket) => {
         break;
       }
 
-      /* -------------------------------------------------------
-         6. AUTHORITATIVE HOST COMMANDS
-      -------------------------------------------------------- */
       case 'HOST_ACTION': {
         if (!client.isHost || client.role !== 'host') return;
         const { action, payload } = msg;
 
         switch (action) {
+          case 'LAUNCH_MATCH': {
+            if (gameState.isGameLaunched) return;
+            if (payload?.user) {
+              client.user = sanitizeName(payload.user);
+              rebuildRoster();
+            }
+            clearPhaseTimers();
+            clearTacticalAlert();
+            gameState.isGameLaunched = true;
+            gameState.isShuffleRunning = false;
+            gameState.phase = 'SELECTION';
+            gameState.selectionTimer = 20;
+            gameState.selectionTimerRunning = false;
+            gameState.selectionTimerWasRunning = false;
+            addServerLog(`[MATCH LAUNCHED] Host ${client.user} opened cluster defragmentation matrix.`);
+            broadcastState('correct');
+            break;
+          }
+
+          case 'RESTART_TO_LOBBY': {
+            clearPhaseTimers();
+            clearTacticalAlert();
+            gameState = createInitialGameState();
+            gameState.isGameLaunched = false;
+            rebuildRoster();
+            gameState.logs = ["[RESTART] Match rebooted to Standby Lobby by Host."];
+            addServerLog(`[LOBBY] Match returned to Standby Lobby. Sectors reset.`);
+            broadcastState('stop_audio');
+            break;
+          }
+
           case 'CONFIRM_CLUE': {
+            if (!gameState.isGameLaunched) return;
             if (gameState.phase !== 'HOST_CONFIRM' || !gameState.pendingHostClue) return;
             if (!payload?.confirmed) {
               gameState.pendingHostClue = null;
               gameState.isShuffleRunning = false;
-              // Restore SELECTION_TIMEOUT if timer was already at 0s when tile was picked
               if (gameState.selectionTimer <= 0) {
                 gameState.phase = 'SELECTION_TIMEOUT';
                 gameState.selectionTimerRunning = false;
@@ -688,7 +768,7 @@ io.on('connection', (socket) => {
           }
 
           case 'TOGGLE_SELECTION_TIMER': {
-            if (gameState.isShuffleRunning) return;
+            if (!gameState.isGameLaunched || gameState.isShuffleRunning) return;
             const start = Boolean(payload?.start);
             gameState.selectionTimerRunning = start;
             if (start && gameState.phase === 'SELECTION_TIMEOUT') {
@@ -701,6 +781,7 @@ io.on('connection', (socket) => {
           }
 
           case 'FORFEIT_SELECTION': {
+            if (!gameState.isGameLaunched) return;
             clearPhaseTimers();
             gameState.isShuffleRunning = false;
             gameState.selectingTeam = gameState.selectingTeam === 'blue' ? 'red' : 'blue';
@@ -714,6 +795,7 @@ io.on('connection', (socket) => {
           }
 
           case 'TOGGLE_THINKING_TIMER': {
+            if (!gameState.isGameLaunched) return;
             if (!['THINKING', 'STEAL_THINKING', 'TYPING', 'STEAL_TYPING'].includes(gameState.phase)) return;
             if (gameState.timer <= 0) return;
             const start = Boolean(payload?.start);
@@ -725,7 +807,7 @@ io.on('connection', (socket) => {
           }
 
           case 'PROCEED_TO_TYPING': {
-            if (!gameState.activeClue) return;
+            if (!gameState.isGameLaunched || !gameState.activeClue) return;
             clearPhaseTimers();
             gameState.phase = gameState.isStealPhase ? 'STEAL_TYPING' : 'TYPING';
             gameState.timer = 15;
@@ -736,7 +818,8 @@ io.on('connection', (socket) => {
           }
 
           case 'FORCE_TIMEOUT_ANSWER': {
-            if (!gameState.activeClue) return;
+            if (!gameState.isGameLaunched || !gameState.activeClue) return;
+            clearTacticalAlert();
             gameState.lockedSubmission = {
               team: gameState.turnSubmittingTeam,
               player: "SYSTEM_TIMEOUT",
@@ -750,6 +833,7 @@ io.on('connection', (socket) => {
           }
 
           case 'ADD_SECONDS': {
+            if (!gameState.isGameLaunched) return;
             const sec = Number(payload?.sec) || 10;
             if (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT') {
               gameState.selectionTimer += sec;
@@ -770,7 +854,8 @@ io.on('connection', (socket) => {
           }
 
           case 'AWARD_VERDICT': {
-            if (!gameState.activeClue) return;
+            if (!gameState.isGameLaunched || !gameState.activeClue) return;
+            clearTacticalAlert();
             const isCorrect = Boolean(payload?.isCorrect);
             const clueVal = Number(gameState.activeClue.value) || 0;
             const answeringTeam = gameState.lockedSubmission ? gameState.lockedSubmission.team : gameState.turnSubmittingTeam;
@@ -819,7 +904,9 @@ io.on('connection', (socket) => {
           }
 
           case 'ABORT_CLUE': {
+            if (!gameState.isGameLaunched) return;
             clearPhaseTimers();
+            clearTacticalAlert();
             gameState.activeClue = null;
             gameState.pendingHostClue = null;
             gameState.lockedSubmission = null;
@@ -838,6 +925,7 @@ io.on('connection', (socket) => {
           }
 
           case 'TOGGLE_PAUSE': {
+            if (!gameState.isGameLaunched) return;
             gameState.isPaused = !gameState.isPaused;
             addServerLog(`[SYSTEM] Match ${gameState.isPaused ? 'PAUSED' : 'RESUMED'} by Host.`);
             broadcastState();
@@ -845,7 +933,8 @@ io.on('connection', (socket) => {
           }
 
           case 'VOID_SUBMISSION': {
-            if (!gameState.activeClue) return;
+            if (!gameState.isGameLaunched || !gameState.activeClue) return;
+            clearTacticalAlert();
             gameState.lockedSubmission = null;
             gameState.liveDraft = { author: "", text: "" };
             gameState.phase = gameState.isStealPhase ? 'STEAL_TYPING' : 'TYPING';
@@ -857,8 +946,9 @@ io.on('connection', (socket) => {
           }
 
           case 'UNDO_CLUE': {
-            if (!gameState.activeClue) return;
+            if (!gameState.isGameLaunched || !gameState.activeClue) return;
             clearPhaseTimers();
+            clearTacticalAlert();
             gameState.phase = 'THINKING';
             gameState.timer = 60;
             gameState.timerRunning = false;
@@ -892,7 +982,9 @@ io.on('connection', (socket) => {
           }
 
           case 'END_MATCH': {
+            if (!gameState.isGameLaunched) return;
             clearPhaseTimers();
+            clearTacticalAlert();
             gameState.isShuffleRunning = false;
             gameState.phase = 'GAME_OVER';
             gameState.timerRunning = false;
@@ -904,8 +996,10 @@ io.on('connection', (socket) => {
 
           case 'RESET_MATCH': {
             clearPhaseTimers();
-            if (tacticalAlertTimeout) clearTimeout(tacticalAlertTimeout);
+            clearTacticalAlert();
+            const wasLaunched = gameState.isGameLaunched;
             gameState = createInitialGameState();
+            gameState.isGameLaunched = wasLaunched;
             rebuildRoster();
             gameState.logs = ["[RESET] Match rebooted by Host. Board restored."];
             broadcastState('stop_audio');
@@ -913,23 +1007,16 @@ io.on('connection', (socket) => {
           }
 
           case 'UPDATE_DECK': {
-            if (payload?.restoreDefault) {
+            const isRestore = Boolean(payload?.restoreDefault);
+            if (isRestore) {
               authoritativeDeck = JSON.parse(JSON.stringify(DEFAULT_DECK));
               addServerLog(`[DECK] Factory default trivia deck restored by Host.`);
             } else if (Array.isArray(payload?.deck) && payload.deck.length === 6) {
-              authoritativeDeck = payload.deck.map((cat, idx) => ({
-                category: String(cat.category || `CAT 0${idx + 1}`).slice(0, 40),
-                clues: (Array.isArray(cat.clues) ? cat.clues : []).slice(0, 5).map((c, cIdx) => ({
-                  value: [200, 400, 600, 800, 1000][cIdx],
-                  type: ['text', 'image', 'audio'].includes(c.type) ? c.type : 'text',
-                  q: String(c.q || ''),
-                  a: String(c.a || ''),
-                  mediaUrl: String(c.mediaUrl || '')
-                }))
-              }));
+              authoritativeDeck = sanitizeDeckStructure(payload.deck);
               addServerLog(`[DECK] Clue deck updated and synchronized across all terminals.`);
             }
-            broadcastState('correct', true, true);
+            // Only send fullDeck back to Host if factory default was restored (avoids echoing 30MB uploads)
+            broadcastState('correct', true, true, isRestore);
             break;
           }
 
@@ -965,5 +1052,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`MS-DOS Defrag Jeopardy v4.0.2 Server online on port ${PORT}`);
+  console.log(`MS-DOS Defrag Jeopardy v4.0.3 Server online on port ${PORT}`);
 });
