@@ -80,14 +80,8 @@
       text-transform: uppercase;
       outline: none;
     }
-    .dos-btn:hover {
-      background-color: var(--dos-cyan);
-      color: #000055;
-    }
-    .dos-btn:active {
-      transform: translate(2px, 2px);
-      box-shadow: none;
-    }
+    .dos-btn:hover { background-color: var(--dos-cyan); color: #000055; }
+    .dos-btn:active { transform: translate(2px, 2px); box-shadow: none; }
     .dos-btn-yellow { border-color: var(--dos-yellow); color: var(--dos-yellow); }
     .dos-btn-yellow:hover { background-color: var(--dos-yellow); color: #000055; }
     .dos-btn-red { border-color: var(--dos-red); color: var(--dos-red); }
@@ -103,11 +97,7 @@
       transform: none !important;
     }
 
-    /* Blinking terminal cursor */
-    @keyframes blink {
-      0%, 49% { opacity: 1; }
-      50%, 100% { opacity: 0; }
-    }
+    @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
     .dos-cursor {
       display: inline-block;
       width: 9px;
@@ -117,12 +107,7 @@
       animation: blink 0.75s infinite;
     }
 
-    /* Arcade Pulse */
-    @keyframes arcadePulse {
-      0% { transform: scale(0.7); opacity: 0; }
-      50% { transform: scale(1.15); opacity: 1; }
-      100% { transform: scale(1.0); opacity: 1; }
-    }
+    @keyframes arcadePulse { 0% { transform: scale(0.7); opacity: 0; } 50% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1.0); opacity: 1; } }
     .pulse-arcade { animation: arcadePulse 0.4s ease-out; }
 
     ::-webkit-scrollbar { width: 10px; height: 10px; background: #000050; }
@@ -132,13 +117,12 @@
 <body class="crt min-h-screen flex flex-col justify-between selection:bg-yellow-300 selection:text-black">
 
   <!-- ========================================== -->
-  <!-- 1. TOP SYSTEM MENU RIBBON (NORTON STYLE)   -->
+  <!-- 1. TOP SYSTEM MENU RIBBON                  -->
   <!-- ========================================== -->
   <header class="bg-[#B0B0B0] text-black px-3 py-1 flex flex-wrap justify-between items-center text-xs sm:text-sm font-bold border-b-2 border-black tracking-wider select-none z-30">
     <div class="flex items-center space-x-3 sm:space-x-4">
       <span class="hover:bg-black hover:text-[#B0B0B0] px-1 cursor-pointer" onclick="openDeckModal()"><span class="text-red-700">M</span>ain Menu</span>
       <span class="hover:bg-black hover:text-[#B0B0B0] px-1 cursor-pointer" onclick="triggerHostPause()"><span class="text-red-700">S</span>ystem [PAUSE: F2]</span>
-      <span id="netStatusBadge" class="text-blue-900 bg-blue-200 px-1.5 py-0.5 border border-blue-900 font-mono">ROOM: #DEFRAG-40</span>
       <span class="hidden md:inline text-black">SECTORS: <span id="headerTilesLeft" class="text-blue-900">30/30</span></span>
     </div>
 
@@ -157,12 +141,19 @@
   <!-- ========================================== -->
   <main class="flex-1 p-2 sm:p-3 max-w-7xl w-full mx-auto flex flex-col justify-between">
 
-    <!-- SUB-BAR / STATUS TELEMETRY -->
+    <!-- SUB-BAR / STATUS TELEMETRY & AUDIO VOLUME STEPPER -->
     <div class="flex flex-wrap justify-between items-center border border-cyan-400 bg-[#000078] px-2.5 py-1 mb-2 text-xs sm:text-sm">
       <div class="flex items-center space-x-2">
         <span class="text-yellow-300 font-bold">TURN AUTHORITY:</span>
         <span id="turnIndicatorBadge" class="px-2 py-0.5 font-bold uppercase border border-cyan-400 bg-cyan-950 text-cyan-300">TEAM BLUE (SELECTING)</span>
         <span id="turnTimerBadge" class="text-yellow-300 font-mono font-bold ml-1 sm:ml-2">[ 20s PAUSED ]</span>
+      </div>
+
+      <!-- Host Peek Mode Floating Return Banner -->
+      <div id="hostPeekModeBanner" class="hidden items-center space-x-2 bg-yellow-400 text-black px-2 py-0.5 border border-black font-bold font-mono text-xs">
+        <span>👁️ BOARD PEEK MODE (LOBBY ACTIVE)</span>
+        <button onclick="togglePeekBoard(false)" class="bg-black text-yellow-300 px-1.5 py-0.5 hover:bg-gray-800">[ 🔙 BACK TO LOBBY ]</button>
+        <button onclick="hostTriggerLaunchMatch()" class="bg-green-800 text-white px-1.5 py-0.5 hover:bg-green-700">[ ▶ LAUNCH MATCH ]</button>
       </div>
 
       <!-- Minimized Clue Floating Indicator -->
@@ -173,7 +164,8 @@
 
       <div id="gameStatusAlert" class="text-cyan-200 truncate max-w-sm sm:max-w-md hidden sm:block">SYSTEM INTEGRITY 100% // FAT CLUSTERS VERIFIED</div>
       <div class="flex items-center space-x-2 sm:space-x-3">
-        <button onclick="toggleAudioMute()" id="muteBtn" class="text-xs text-yellow-300 hover:underline">[ 🔊 AUDIO: ON ]</button>
+        <!-- Multi-step volume control (0% to 100%) -->
+        <button onclick="cycleAudioVolume()" id="volumeBtn" class="text-xs text-yellow-300 font-bold hover:underline font-mono">[ 🔊 VOL: 100% ]</button>
         <button onclick="openDeckModal()" class="text-xs text-cyan-300 hover:underline">[ 📁 DECK MANAGER ]</button>
       </div>
     </div>
@@ -383,6 +375,7 @@
             <button onclick="triggerHostUndoClue()" class="dos-btn px-2.5 py-1">[ 🔄 RE-OPEN CLUE ]</button>
           </div>
           <div class="flex items-center space-x-2">
+            <button onclick="triggerHostRestartToLobby()" class="dos-btn dos-btn-yellow px-3 py-1 font-bold">[ 🚪 RETURN TO LOBBY ]</button>
             <button onclick="triggerHostEndMatch()" class="dos-btn dos-btn-yellow px-3 py-1">[ 🏆 END MATCH ]</button>
             <button onclick="triggerHostResetMatch()" class="dos-btn text-red-300 px-3 py-1">[ ⚠️ RESET MATCH ]</button>
           </div>
@@ -394,6 +387,90 @@
   <!-- ========================================== -->
   <!-- 3. RETRO MODALS & OVERLAYS                 -->
   <!-- ========================================== -->
+
+  <!-- OVERLAY A: RETRO STANDBY WAITING ROOM (DEFAULT INITIAL SCREEN - z-40) -->
+  <div id="waitingRoomOverlay" class="fixed inset-0 bg-[#0000A8] flex flex-col justify-between p-3 sm:p-6 z-40 overflow-y-auto">
+    <div class="dos-box-yellow max-w-4xl w-full mx-auto p-4 sm:p-6 bg-[#000078] flex-1 flex flex-col justify-between">
+      
+      <!-- Lobby Header with Direct Volume & Cache Controls -->
+      <div class="border-b-2 border-yellow-400 pb-3">
+        <div class="flex flex-wrap justify-between items-center text-xs font-mono mb-2 gap-2">
+          <span class="text-cyan-300 font-bold">NORTON SPEED DISK // MULTI-TERMINAL STANDBY</span>
+          <div class="flex items-center space-x-2">
+            <button onclick="cycleAudioVolume()" id="lobbyVolumeBtn" class="dos-btn dos-btn-yellow px-2 py-0.5 text-xs font-mono">[ 🔊 VOL: 100% ]</button>
+            <button onclick="resetClientSession()" class="dos-btn dos-btn-red px-2 py-0.5 text-xs font-mono">[ 🔄 RESET CACHE ]</button>
+          </div>
+        </div>
+        <div class="text-yellow-300 text-lg sm:text-2xl font-bold font-mono tracking-widest text-center">
+          ╔═══════════════════════════════════════════════════════════╗<br>
+          ║         MS-DOS DEFRAG JEOPARDY v4.0 // STANDBY LOBBY      ║<br>
+          ╚═══════════════════════════════════════════════════════════╝
+        </div>
+        <div class="text-cyan-300 font-mono text-xs sm:text-sm mt-1 text-center">
+          SYSTEM STATUS: DISK CLUSTERS BUFFERED. WAITING FOR HOST COMMAND...
+        </div>
+      </div>
+
+      <!-- Callsign Input & Role Selector Box -->
+      <div class="my-4 p-3 bg-black border-2 border-cyan-400 font-mono text-xs">
+        <div class="text-yellow-300 font-bold mb-2">1. SET CALLSIGN &amp; SELECT SQUADRON:</div>
+        <div class="flex flex-wrap gap-2 items-center mb-3">
+          <span class="text-gray-300">CALLSIGN:</span>
+          <input type="text" id="waitingRoomNameInput" value="" maxlength="28" placeholder="Enter Call Name..."
+                 class="bg-[#000040] text-cyan-200 border border-cyan-300 p-1.5 flex-1 focus:outline-none focus:border-yellow-300 font-mono text-xs sm:text-sm">
+          <button onclick="applyCallsignFromWaitingRoom()" class="dos-btn px-3 py-1.5 text-xs font-bold">[ 💾 SET NAME ]</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <button onclick="joinRoleFromLobby('blue')" class="dos-btn py-2 text-cyan-300 border-cyan-400 font-bold">[ 🔵 JOIN TEAM BLUE ]</button>
+          <button onclick="joinRoleFromLobby('red')" class="dos-btn py-2 text-red-400 border-red-400 font-bold">[ 🔴 JOIN TEAM RED ]</button>
+          <button onclick="joinRoleFromLobby('board')" class="dos-btn dos-btn-yellow py-2 font-bold">[ 🖥️ SPECTATOR VIEW ]</button>
+        </div>
+      </div>
+
+      <!-- Live Roster Boards in Waiting Room -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs my-2">
+        <div class="border border-cyan-400 p-3 bg-[#000050]">
+          <div class="text-cyan-300 font-bold border-b border-cyan-600 pb-1 mb-2">┌─ SQUADRON BLUE ROSTER ─┐</div>
+          <div id="lobbyBlueList" class="min-h-[60px] text-gray-300 space-y-0.5">(No players connected)</div>
+        </div>
+        <div class="border border-red-400 p-3 bg-[#000050]">
+          <div class="text-red-400 font-bold border-b border-red-600 pb-1 mb-2">┌─ SQUADRON RED ROSTER ─┐</div>
+          <div id="lobbyRedList" class="min-h-[60px] text-gray-300 space-y-0.5">(No players connected)</div>
+        </div>
+      </div>
+
+      <!-- Telemetry Strip -->
+      <div class="flex flex-wrap justify-between items-center text-xs text-gray-300 font-mono py-2 border-t border-cyan-700">
+        <div>HOST ACTIVE: <span id="lobbyHostDisplay" class="text-yellow-300 font-bold">Waiting for PIN entry...</span></div>
+        <div>SPECTATORS IN BUFFER: <span id="lobbySpecCount" class="text-green-300 font-bold">0</span></div>
+        <div>YOUR CURRENT ROLE: <span id="lobbyMyRoleTag" class="text-cyan-300 font-bold uppercase">BOARD (SPECTATOR)</span></div>
+      </div>
+
+      <!-- Host Authentication & Launch Desk in Waiting Room -->
+      <div class="mt-2 p-3 bg-[#000040] border-2 border-yellow-400 font-mono text-xs">
+        <div id="lobbyHostGate" class="flex flex-wrap items-center gap-2">
+          <span class="text-yellow-300 font-bold">HOST VERIFICATION:</span>
+          <input type="password" id="lobbyWaitingHostPin" placeholder="PIN (1337)" class="bg-black text-yellow-300 border border-yellow-400 p-1 text-center w-28">
+          <button onclick="joinHostFromWaitingRoom()" class="dos-btn px-3 py-1">[ 👑 AUTHENTICATE HOST ]</button>
+        </div>
+        
+        <div id="lobbyHostControls" class="hidden flex-col gap-2">
+          <div class="flex justify-between items-center text-yellow-300 font-bold">
+            <span>👑 HOST COMMAND CONSOLE UNLOCKED</span>
+            <span class="text-green-400">READY TO INITIALIZE</span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="hostTriggerLaunchMatch()" class="dos-btn dos-btn-green py-2.5 px-6 font-bold text-sm sm:text-base animate-pulse">
+              [ ▶ LAUNCH MATCH // REVEAL DEFRAG MATRIX ]
+            </button>
+            <button onclick="openDeckModal()" class="dos-btn px-3 py-2">[ 📁 CONFIGURE DECK ]</button>
+            <button onclick="togglePeekBoard(true)" class="dos-btn dos-btn-yellow px-3 py-2">[ 👁️ PEEK BOARD GRID ]</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <!-- MODAL 1: 5-SECOND TACTICAL CHALLENGE POPUP BANNER -->
   <div id="modalTacticalBanner" class="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-[60] hidden">
@@ -601,7 +678,7 @@
     </div>
   </div>
 
-  <!-- MODAL 5: BRUTE FORCE LOCKOUT DIALOG (FIXED CLOSING BUTTON TAG) -->
+  <!-- MODAL 5: BRUTE FORCE LOCKOUT DIALOG -->
   <div id="modalNahUhLockout" class="fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-[70] hidden">
     <div class="dos-box-red max-w-md w-full p-5 bg-[#000078] text-center font-mono">
       <div class="text-red-400 font-bold border-b-2 border-red-500 pb-1 text-sm mb-3">
@@ -683,8 +760,8 @@
       <div id="victoryWinnerBanner" class="text-2xl sm:text-3xl font-bold text-white mb-2">CHAMPION: TEAM BLUE</div>
       <div id="victoryFinalScores" class="text-base sm:text-lg text-cyan-300 mb-3">FINAL ASSETS: BLUE: $0  │  RED: $0</div>
       <div class="flex justify-center space-x-3">
-        <button id="btnVictoryReset" onclick="triggerHostResetMatch(); closeVictoryModal();" class="dos-btn dos-btn-yellow px-5 py-1.5 font-bold hidden">
-          [ 🔄 PLAY AGAIN (RESET) ]
+        <button id="btnVictoryReset" onclick="triggerHostRestartToLobby(); closeVictoryModal();" class="dos-btn dos-btn-yellow px-5 py-1.5 font-bold hidden">
+          [ 🔄 PLAY AGAIN (RESET TO LOBBY) ]
         </button>
         <button onclick="closeVictoryModal()" class="dos-btn px-4 py-1.5">[ CLOSE BANNER ]</button>
       </div>
@@ -713,24 +790,84 @@
   <!-- ========================================== -->
   <script>
     /* -------------------------------------------------------------
-       AUDIO SYNTHESIZER & EXTERNAL MEDIA PLAYER
+       AUDIO SYNTHESIZER & MULTI-STEP VOLUME CONTROLLER
     -------------------------------------------------------------- */
     let audioCtx = null;
-    let isSoundMuted = false;
+    let masterGainNode = null;
     let externalAudioPlayer = null;
+    let synthNoteTimeouts = [];
     let activeClueMediaCache = '';
 
+    const VOLUME_STEPS = [1.0, 0.75, 0.50, 0.25, 0.0];
+    let volumeStepIndex = parseInt(localStorage.getItem('dos_vol_step') || '0', 10);
+    if (isNaN(volumeStepIndex) || volumeStepIndex < 0 || volumeStepIndex >= VOLUME_STEPS.length) {
+      volumeStepIndex = 0;
+    }
+
+    function getMasterVolume() {
+      return VOLUME_STEPS[volumeStepIndex];
+    }
+
     function initAudio() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGainNode = audioCtx.createGain();
+        masterGainNode.gain.setValueAtTime(getMasterVolume(), audioCtx.currentTime);
+        masterGainNode.connect(audioCtx.destination);
+      }
       if (audioCtx.state === 'suspended') {
         audioCtx.resume().catch(() => {});
       }
     }
 
+    function updateVolumeUI() {
+      const vol = getMasterVolume();
+      const pct = Math.round(vol * 100);
+      const btn = document.getElementById('volumeBtn');
+      const lobbyBtn = document.getElementById('lobbyVolumeBtn');
+
+      if (btn) {
+        if (pct === 0) {
+          btn.innerText = '[ 🔇 VOL: MUTED ]';
+          btn.className = 'text-xs text-red-400 font-bold hover:underline font-mono';
+        } else {
+          btn.innerText = `[ 🔊 VOL: ${pct}% ]`;
+          btn.className = 'text-xs text-yellow-300 font-bold hover:underline font-mono';
+        }
+      }
+
+      if (lobbyBtn) {
+        if (pct === 0) {
+          lobbyBtn.innerText = '[ 🔇 VOL: MUTED ]';
+          lobbyBtn.className = 'dos-btn dos-btn-red px-2 py-0.5 text-xs font-mono';
+        } else {
+          lobbyBtn.innerText = `[ 🔊 VOL: ${pct}% ]`;
+          lobbyBtn.className = 'dos-btn dos-btn-yellow px-2 py-0.5 text-xs font-mono';
+        }
+      }
+    }
+
+    window.cycleAudioVolume = function() {
+      volumeStepIndex = (volumeStepIndex + 1) % VOLUME_STEPS.length;
+      localStorage.setItem('dos_vol_step', String(volumeStepIndex));
+      const newVol = getMasterVolume();
+
+      if (masterGainNode && audioCtx) {
+        masterGainNode.gain.setValueAtTime(newVol, audioCtx.currentTime);
+      }
+      if (externalAudioPlayer) {
+        externalAudioPlayer.volume = newVol;
+        externalAudioPlayer.muted = (newVol === 0);
+      }
+
+      updateVolumeUI();
+      if (newVol > 0) playTone(780, 0.05, 'square', 0.15);
+    };
+
     function unlockBrowserAudioOnGesture() {
       try {
         initAudio();
-        if (externalAudioPlayer && externalAudioPlayer.paused && !isSoundMuted && !gameState.isPaused && gameState.phase === 'MEDIA_PLAYING') {
+        if (externalAudioPlayer && externalAudioPlayer.paused && getMasterVolume() > 0 && !gameState.isPaused && gameState.phase === 'MEDIA_PLAYING') {
           externalAudioPlayer.play().catch(() => {});
         }
       } catch (e) {}
@@ -740,6 +877,10 @@
     window.addEventListener('touchstart', unlockBrowserAudioOnGesture, { passive: true });
 
     function stopExternalAudio() {
+      if (synthNoteTimeouts.length > 0) {
+        synthNoteTimeouts.forEach(t => clearTimeout(t));
+        synthNoteTimeouts = [];
+      }
       if (externalAudioPlayer) {
         try {
           externalAudioPlayer.pause();
@@ -750,17 +891,17 @@
     }
 
     function playTone(freq, duration = 0.08, type = 'square', gainVal = 0.1) {
-      if (isSoundMuted) return;
+      if (getMasterVolume() === 0) return;
       try {
         initAudio();
         const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
+        const toneGain = audioCtx.createGain();
         osc.type = type;
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        toneGain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        toneGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(toneGain);
+        toneGain.connect(masterGainNode);
         osc.start();
         osc.stop(audioCtx.currentTime + duration);
       } catch (e) {}
@@ -791,11 +932,6 @@
       const notes = [523, 523, 523, 659, 783, 659, 783, 1046];
       notes.forEach((f, i) => setTimeout(() => playTone(f, 0.18, 'square', 0.15), i * 150));
     };
-    window.toggleAudioMute = function() {
-      isSoundMuted = !isSoundMuted;
-      if (externalAudioPlayer) externalAudioPlayer.muted = isSoundMuted;
-      document.getElementById('muteBtn').innerText = isSoundMuted ? '[ 🔇 AUDIO: OFF ]' : '[ 🔊 AUDIO: ON ]';
-    };
 
     /* -------------------------------------------------------------
        PUBLIC DECK STRUCTURE
@@ -810,7 +946,7 @@
     ];
 
     /* -------------------------------------------------------------
-       STATE MANAGEMENT & MULTI-DEVICE SOCKET ENGINE
+       STATE MANAGEMENT & SOCKET ENGINE
     -------------------------------------------------------------- */
     const socket = (typeof io !== 'undefined') ? io({
       reconnection: true,
@@ -819,7 +955,6 @@
       reconnectionDelayMax: 5000
     }) : null;
 
-    const hasSavedRole = Boolean(localStorage.getItem('dos_player_role'));
     let myRole = localStorage.getItem('dos_player_role') || 'board';
     let myPlayerName = localStorage.getItem('dos_player_name') || ("Operator_" + Math.floor(100 + Math.random() * 900));
     localStorage.setItem('dos_player_name', myPlayerName);
@@ -830,6 +965,7 @@
     let isClueMinimized = false;
     let victoryDismissedForGame = false;
     let isShuffleAnimating = false;
+    let isHostPeekingBoard = false;
     let activeShuffleHighlight = null;
     let activeScanTimeout = null;
     let activeBlinkInterval = null;
@@ -840,6 +976,7 @@
     let hostEditableDeck = null;
 
     let gameState = {
+      isGameLaunched: false,
       scores: { blue: 0, red: 0 },
       selectingTeam: 'blue',
       selectionTimer: 20,
@@ -867,6 +1004,18 @@
       roster: { host: null, blue: [], red: [], spectators: [] }
     };
 
+    function syncCallsignInputs(newName) {
+      const cleaned = String(newName || '').trim().slice(0, 28);
+      if (cleaned) {
+        myPlayerName = cleaned;
+        localStorage.setItem('dos_player_name', myPlayerName);
+      }
+      const lobbyInput = document.getElementById('lobbyPlayerNameInput');
+      const waitingInput = document.getElementById('waitingRoomNameInput');
+      if (lobbyInput && document.activeElement !== lobbyInput) lobbyInput.value = myPlayerName;
+      if (waitingInput && document.activeElement !== waitingInput) waitingInput.value = myPlayerName;
+    }
+
     function sendHostAction(action, payload = {}) {
       if (!isHostAuthenticated || myRole !== 'host') return;
       if (socket && socket.connected) {
@@ -890,11 +1039,6 @@
 
     if (socket) {
       socket.on('connect', () => {
-        const badge = document.getElementById('netStatusBadge');
-        if (badge) {
-          badge.innerText = "ROOM: #DEFRAG-40 [ONLINE]";
-          badge.className = "text-blue-900 bg-blue-200 px-1.5 py-0.5 border border-blue-900 font-mono";
-        }
         if (myRole === 'host' && isHostAuthenticated) {
           socket.emit('game_message', {
             type: 'ROSTER_JOIN',
@@ -909,10 +1053,9 @@
       });
 
       socket.on('disconnect', () => {
-        const badge = document.getElementById('netStatusBadge');
+        const badge = document.getElementById('turnTimerBadge');
         if (badge) {
-          badge.innerText = "ROOM: #DEFRAG-40 [RECONNECTING...]";
-          badge.className = "text-white bg-red-700 px-1.5 py-0.5 border border-yellow-300 font-mono animate-pulse";
+          badge.innerText = "[ NETWORK DISCONNECTED ]";
         }
       });
 
@@ -964,6 +1107,7 @@
         if (data.type === 'STATE_UPDATE') {
           const prevPhase = gameState.phase;
           const wasPaused = gameState.isPaused;
+          const wasLaunched = gameState.isGameLaunched;
           gameState = data.state;
 
           if (data.publicDeck) {
@@ -981,19 +1125,29 @@
             activeClueMediaCache = '';
           }
 
-          if (isShuffleAnimating && !gameState.isShuffleRunning && gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') {
+          if (wasLaunched && !gameState.isGameLaunched) {
+            isHostPeekingBoard = false;
+            isClueMinimized = false;
+            victoryDismissedForGame = false;
+            closeLobbyModal();
+          } else if (!wasLaunched && gameState.isGameLaunched) {
+            isHostPeekingBoard = false;
+          }
+
+          if (isShuffleAnimating && (!gameState.isShuffleRunning || !gameState.isGameLaunched)) {
             clearShuffleTimersAndStyles();
           }
 
           if (
             data.sfx === 'stop_audio' ||
+            !gameState.isGameLaunched ||
             !gameState.activeClue ||
             ['SELECTION', 'SELECTION_TIMEOUT', 'HOST_CONFIRM', 'GAME_OVER'].includes(gameState.phase)
           ) {
             stopExternalAudio();
           } else if (externalAudioPlayer && wasPaused !== gameState.isPaused) {
             if (gameState.isPaused) externalAudioPlayer.pause();
-            else if (!isSoundMuted) externalAudioPlayer.play().catch(() => {});
+            else if (getMasterVolume() > 0) externalAudioPlayer.play().catch(() => {});
           }
 
           if (prevPhase !== 'GAME_OVER' && gameState.phase === 'GAME_OVER') {
@@ -1100,9 +1254,6 @@
       document.getElementById('modalDosMessage').classList.add('hidden');
     };
 
-    /* -------------------------------------------------------------
-       ANTI-BRUTE-FORCE PIN LOCKOUT
-    -------------------------------------------------------------- */
     function checkPinLockoutActive() {
       const lockoutUntil = parseInt(localStorage.getItem('dos_pin_lockout_until') || '0', 10);
       if (Date.now() < lockoutUntil) {
@@ -1120,11 +1271,11 @@
     };
 
     /* -------------------------------------------------------------
-       ROLE MANAGEMENT
+       ROLE MANAGEMENT & WAITING ROOM HOOKS
     -------------------------------------------------------------- */
     window.openLobbyModal = function() {
       window.sfxKeyClick();
-      document.getElementById('lobbyPlayerNameInput').value = myPlayerName;
+      syncCallsignInputs(myPlayerName);
       document.getElementById('modalLobby').classList.remove('hidden');
     };
 
@@ -1132,13 +1283,67 @@
       document.getElementById('modalLobby').classList.add('hidden');
     };
 
+    // Safely updates callsign in Waiting Room without demoting an authenticated Host
+    window.applyCallsignFromWaitingRoom = function() {
+      window.sfxKeyClick();
+      const nameInput = document.getElementById('waitingRoomNameInput');
+      if (nameInput && nameInput.value.trim()) {
+        syncCallsignInputs(nameInput.value);
+      }
+      if (myRole === 'host' && isHostAuthenticated) {
+        if (socket && socket.connected) {
+          socket.emit('game_message', {
+            type: 'ROSTER_JOIN',
+            user: myPlayerName,
+            role: 'host',
+            pin: savedHostPin || '1337'
+          });
+        }
+      } else {
+        switchViewRole(myRole);
+      }
+    };
+
+    window.joinRoleFromLobby = function(targetRole) {
+      const nameInput = document.getElementById('waitingRoomNameInput');
+      if (nameInput && nameInput.value.trim()) {
+        syncCallsignInputs(nameInput.value);
+      }
+      window.joinRole(targetRole);
+    };
+
+    window.joinHostFromWaitingRoom = function() {
+      window.sfxKeyClick();
+      if (checkPinLockoutActive()) return;
+
+      const pinInput = document.getElementById('lobbyWaitingHostPin');
+      const enteredPin = pinInput ? pinInput.value.trim() : '';
+      savedHostPin = enteredPin || savedHostPin;
+      sessionStorage.setItem('dos_host_pin', savedHostPin);
+
+      const nameInput = document.getElementById('waitingRoomNameInput');
+      if (nameInput && nameInput.value.trim()) {
+        syncCallsignInputs(nameInput.value);
+      }
+
+      if (socket && socket.connected) {
+        socket.emit('game_message', {
+          type: 'ROSTER_JOIN',
+          user: myPlayerName,
+          role: 'host',
+          pin: savedHostPin
+        });
+      }
+    };
+
     window.joinRole = function(targetRole) {
       window.sfxKeyClick();
-      const nameInput = document.getElementById('lobbyPlayerNameInput');
-      const enteredName = nameInput ? nameInput.value.trim() : '';
-      if (enteredName) {
-        myPlayerName = enteredName.slice(0, 28);
-        localStorage.setItem('dos_player_name', myPlayerName);
+      const modalOpen = !document.getElementById('modalLobby').classList.contains('hidden');
+      const activeNameInput = modalOpen
+        ? document.getElementById('lobbyPlayerNameInput')
+        : document.getElementById('waitingRoomNameInput');
+      if (activeNameInput && activeNameInput.value.trim()) {
+        syncCallsignInputs(activeNameInput.value);
       }
 
       if (targetRole === 'host') {
@@ -1205,6 +1410,7 @@
       if (role !== 'host') {
         hostEditableDeck = null;
         hostSecretAnswer = null;
+        isHostPeekingBoard = false;
       }
 
       document.getElementById('viewBoard').classList.remove('hidden');
@@ -1241,9 +1447,113 @@
     }
 
     /* -------------------------------------------------------------
-       RENDERING ENGINE
+       RENDERING ENGINE & WAITING ROOM CURTAIN
     -------------------------------------------------------------- */
+    function renderWaitingRoomOverlay() {
+      const overlay = document.getElementById('waitingRoomOverlay');
+      const peekBanner = document.getElementById('hostPeekModeBanner');
+      if (!overlay) return;
+
+      if (!gameState.isGameLaunched && !isHostPeekingBoard) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+        if (peekBanner) {
+          peekBanner.classList.add('hidden');
+          peekBanner.classList.remove('flex');
+        }
+
+        const bluePlayers = gameState.roster?.blue || [];
+        const redPlayers = gameState.roster?.red || [];
+        const hostName = gameState.roster?.host;
+        const specCount = (gameState.roster?.spectators || []).length;
+
+        document.getElementById('lobbyBlueList').innerHTML = bluePlayers.length > 0
+          ? bluePlayers.map(p => `<div>• ${escapeHtml(p)}</div>`).join('')
+          : '<div class="text-gray-500">(No players connected)</div>';
+
+        document.getElementById('lobbyRedList').innerHTML = redPlayers.length > 0
+          ? redPlayers.map(p => `<div>• ${escapeHtml(p)}</div>`).join('')
+          : '<div class="text-gray-500">(No players connected)</div>';
+
+        document.getElementById('lobbyHostDisplay').innerText = hostName ? `${hostName} (ONLINE)` : 'Waiting for PIN entry...';
+        document.getElementById('lobbyHostDisplay').className = hostName ? 'text-green-400 font-bold' : 'text-yellow-300 font-bold';
+        document.getElementById('lobbySpecCount').innerText = String(specCount);
+
+        const roleTag = document.getElementById('lobbyMyRoleTag');
+        if (roleTag) {
+          roleTag.innerText = myRole === 'host' && isHostAuthenticated
+            ? '👑 HOST MASTER'
+            : myRole === 'blue'
+            ? '🔵 TEAM BLUE'
+            : myRole === 'red'
+            ? '🔴 TEAM RED'
+            : 'BOARD (SPECTATOR)';
+        }
+
+        const hostGate = document.getElementById('lobbyHostGate');
+        const hostControls = document.getElementById('lobbyHostControls');
+        if (myRole === 'host' && isHostAuthenticated) {
+          hostGate.classList.add('hidden');
+          hostControls.classList.remove('hidden');
+          hostControls.classList.add('flex');
+        } else {
+          hostGate.classList.remove('hidden');
+          hostControls.classList.add('hidden');
+          hostControls.classList.remove('flex');
+        }
+      } else {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+        if (peekBanner) {
+          if (!gameState.isGameLaunched && isHostPeekingBoard) {
+            peekBanner.classList.remove('hidden');
+            peekBanner.classList.add('flex');
+          } else {
+            peekBanner.classList.add('hidden');
+            peekBanner.classList.remove('flex');
+          }
+        }
+      }
+    }
+
+    window.togglePeekBoard = function(peek) {
+      window.sfxKeyClick();
+      isHostPeekingBoard = Boolean(peek);
+      lastHostActionSignature = '';
+      renderAll();
+    };
+
+    window.hostTriggerLaunchMatch = function() {
+      if (myRole !== 'host' || !isHostAuthenticated) return;
+      window.sfxKeyClick();
+      const nameInput = document.getElementById('waitingRoomNameInput');
+      if (nameInput && nameInput.value.trim()) {
+        syncCallsignInputs(nameInput.value);
+      }
+      isHostPeekingBoard = false;
+      sendHostAction('LAUNCH_MATCH', { user: myPlayerName });
+    };
+
+    window.triggerHostRestartToLobby = function() {
+      if (myRole !== 'host' || !isHostAuthenticated) return;
+      window.showDosModal(
+        "CONFIRM RETURN TO LOBBY",
+        "Reboot match back to Standby Waiting Room? Scores and disk clusters will be fully reset.",
+        () => {
+          window.sfxKeyClick();
+          isHostPeekingBoard = false;
+          isClueMinimized = false;
+          victoryDismissedForGame = false;
+          clearShuffleTimersAndStyles();
+          stopExternalAudio();
+          sendHostAction('RESTART_TO_LOBBY');
+        },
+        () => {}
+      );
+    };
+
     function renderAll() {
+      renderWaitingRoomOverlay();
       renderBoardHUD();
       renderBoardGrid();
       renderPersistentInputBar();
@@ -1253,6 +1563,7 @@
       renderClueStage();
       renderVictoryModal();
       renderLogs();
+      updateVolumeUI();
     }
 
     function renderBoardHUD() {
@@ -1297,7 +1608,8 @@
 
       const shuffleActive = isShuffleAnimating || gameState.isShuffleRunning;
       let timerBadgeText = `[ ${gameState.selectionTimer}s ${gameState.selectionTimerRunning ? 'RUNNING' : 'PAUSED'} ]`;
-      if (shuffleActive) timerBadgeText = `[ ${gameState.selectionTimer}s ROULETTE SCAN ]`;
+      if (!gameState.isGameLaunched) timerBadgeText = "[ STANDBY LOBBY ]";
+      else if (shuffleActive) timerBadgeText = `[ ${gameState.selectionTimer}s ROULETTE SCAN ]`;
       else if (gameState.phase === 'SELECTION_TIMEOUT') timerBadgeText = "[ 00s TIME EXPIRED — WAITING HOST ]";
       else if (gameState.phase !== 'SELECTION') timerBadgeText = `[ ${gameState.phase.replace(/_/g, ' ')} ]`;
       document.getElementById('turnTimerBadge').innerText = timerBadgeText;
@@ -1309,7 +1621,10 @@
         const sec = gameState.selectionTimer;
         if (boardClock) boardClock.innerText = `00:${sec < 10 ? '0' : ''}${sec}`;
         if (boardDesc) {
-          if (shuffleActive) {
+          if (!gameState.isGameLaunched) {
+            boardDesc.innerText = `[STANDBY LOBBY] AWAITING HOST LAUNCH...`;
+            boardDesc.className = "text-xs text-yellow-300 tracking-wider";
+          } else if (shuffleActive) {
             boardDesc.innerText = `[ROULETTE ACTIVE] SCANNING SECTORS...`;
             boardDesc.className = "text-xs text-yellow-300 font-bold animate-pulse";
           } else if (gameState.phase === 'SELECTION_TIMEOUT') {
@@ -1377,7 +1692,8 @@
       const shuffleActive = isShuffleAnimating || gameState.isShuffleRunning;
       const canClick = (myRole === gameState.selectingTeam || (myRole === 'host' && isHostAuthenticated)) &&
                        (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT') &&
-                       !shuffleActive;
+                       !shuffleActive &&
+                       gameState.isGameLaunched;
 
       const deckSig = gameDeck.map(c => `${c.category}:${c.clues.map(cl => cl.type).join(',')}`).join('|');
       const clearedSig = (gameState.clearedClues || []).join(',');
@@ -1474,7 +1790,8 @@
       const shuffleActive = isShuffleAnimating || gameState.isShuffleRunning;
       const canShuffle = (myRole === gameState.selectingTeam) && 
                          (gameState.phase === 'SELECTION' || gameState.phase === 'SELECTION_TIMEOUT') &&
-                         !shuffleActive;
+                         !shuffleActive &&
+                         gameState.isGameLaunched;
       if (canShuffle) btnShuffle.classList.remove('hidden');
       else btnShuffle.classList.add('hidden');
 
@@ -1533,7 +1850,9 @@
       hostConsole.classList.remove('hidden');
       hostConsole.classList.add('flex');
 
-      document.getElementById('hostPhaseTitleBadge').innerText = `PHASE: ${gameState.phase.replace(/_/g, ' ')}`;
+      document.getElementById('hostPhaseTitleBadge').innerText = !gameState.isGameLaunched
+        ? "PHASE: STANDBY LOBBY (PEEK MODE)"
+        : `PHASE: ${gameState.phase.replace(/_/g, ' ')}`;
       const actionBox = document.getElementById('hostDynamicActionBox');
 
       const blueInput = document.getElementById('hostOverrideBlueInput');
@@ -1559,7 +1878,19 @@
       const shuffleActive = isShuffleAnimating || gameState.isShuffleRunning;
       let html = '';
 
-      if (gameState.phase === 'SELECTION') {
+      if (!gameState.isGameLaunched) {
+        html = `
+          <div class="text-xs text-yellow-300 font-bold mb-2">
+            👁️ BOARD PEEK ACTIVE — PLAYERS ARE CURRENTLY IN THE STANDBY WAITING ROOM
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="hostTriggerLaunchMatch()" class="dos-btn dos-btn-green px-4 py-1.5 font-bold">[ ▶ LAUNCH MATCH // REVEAL MATRIX TO ALL ]</button>
+            <button onclick="togglePeekBoard(false)" class="dos-btn dos-btn-yellow px-3 py-1.5 font-bold">[ 🔙 EXIT PEEK // RETURN TO WAITING ROOM ]</button>
+            <button onclick="openDeckModal()" class="dos-btn px-3 py-1.5">[ 📁 CONFIGURE DECK ]</button>
+          </div>
+        `;
+      }
+      else if (gameState.phase === 'SELECTION') {
         html = `
           <div class="text-xs text-yellow-300 font-bold mb-2">
             TURN: SQUADRON ${escapeHtml(gameState.selectingTeam.toUpperCase())} IS CHOOSING A TILE (<span id="hostLiveSelectionSec">${gameState.selectionTimer}</span>s remaining)
@@ -1671,7 +2002,7 @@
         html = `<div class="text-xs text-gray-300">SYSTEM IDLE // STANDBY</div>`;
       }
 
-      const actionSig = `${gameState.phase}__${gameState.selectingTeam}__${gameState.turnSubmittingTeam}__${gameState.selectionTimerRunning}__${gameState.timerRunning}__${shuffleActive}__${gameState.pendingHostClue?.catIdx}-${gameState.pendingHostClue?.clueIdx}`;
+      const actionSig = `${gameState.isGameLaunched}__${isHostPeekingBoard}__${gameState.phase}__${gameState.selectingTeam}__${gameState.turnSubmittingTeam}__${gameState.selectionTimerRunning}__${gameState.timerRunning}__${shuffleActive}__${gameState.pendingHostClue?.catIdx}-${gameState.pendingHostClue?.clueIdx}`;
       if (actionSig !== lastHostActionSignature) {
         lastHostActionSignature = actionSig;
         actionBox.innerHTML = html;
@@ -1685,7 +2016,7 @@
 
     function renderHostConfirmModal() {
       const modal = document.getElementById('modalHostConfirm');
-      if (gameState.phase === 'HOST_CONFIRM' && gameState.pendingHostClue) {
+      if (gameState.isGameLaunched && gameState.phase === 'HOST_CONFIRM' && gameState.pendingHostClue) {
         modal.classList.remove('hidden');
         const cat = gameDeck[gameState.pendingHostClue.catIdx];
         document.getElementById('confirmModalCategory').innerText = cat ? cat.category : 'CATEGORY';
@@ -1714,7 +2045,7 @@
     function renderClueStage() {
       const modal = document.getElementById('modalClueStage');
       const minBanner = document.getElementById('minimizedClueBanner');
-      const hasActiveClue = ['COUNTDOWN', 'MEDIA_PLAYING', 'THINKING', 'THINKING_TIMEOUT', 'TYPING', 'TYPING_TIMEOUT', 'STEAL_THINKING', 'STEAL_TYPING', 'HOST_JUDGING'].includes(gameState.phase);
+      const hasActiveClue = gameState.isGameLaunched && ['COUNTDOWN', 'MEDIA_PLAYING', 'THINKING', 'THINKING_TIMEOUT', 'TYPING', 'TYPING_TIMEOUT', 'STEAL_THINKING', 'STEAL_TYPING', 'HOST_JUDGING'].includes(gameState.phase);
 
       if (!hasActiveClue || !gameState.activeClue) {
         modal.classList.add('hidden');
@@ -1870,6 +2201,7 @@
        TILE CLICK & STATE-ROUTED HOST CONFIRMATION
     -------------------------------------------------------------- */
     window.handleTileClick = function(catIdx, valIdx, fromRoulette = false) {
+      if (!gameState.isGameLaunched) return;
       if (gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') return;
       if ((isShuffleAnimating || gameState.isShuffleRunning) && !fromRoulette) return;
       const canClick = (myRole === gameState.selectingTeam) || (myRole === 'host' && isHostAuthenticated);
@@ -1891,6 +2223,7 @@
        4-SECOND RANDOM CLUSTER SCAN (SECTOR ROULETTE)
     -------------------------------------------------------------- */
     window.triggerRandomTileScan = function() {
+      if (!gameState.isGameLaunched) return;
       if (isShuffleAnimating || gameState.isShuffleRunning) return;
       if (gameState.phase !== 'SELECTION' && gameState.phase !== 'SELECTION_TIMEOUT') return;
       const canTrigger = (myRole === gameState.selectingTeam) || (myRole === 'host' && isHostAuthenticated);
@@ -2002,7 +2335,7 @@
     }
 
     /* -------------------------------------------------------------
-       MEDIA STAGE & SYNTHESIZED / URL / BASE64 AUDIO PLAYBACK
+       MEDIA STAGE & AUDIO PLAYBACK
     -------------------------------------------------------------- */
     function getResolvedActiveMediaUrl() {
       if (activeClueMediaCache) return activeClueMediaCache;
@@ -2014,6 +2347,8 @@
       if (!gameState.activeClue || gameState.activeClue.type !== 'audio') return;
       const mediaUrl = String(getResolvedActiveMediaUrl() || 'synth:c_major_scale');
 
+      stopExternalAudio();
+
       if (
         mediaUrl.startsWith('http://') ||
         mediaUrl.startsWith('https://') ||
@@ -2021,9 +2356,9 @@
         mediaUrl.startsWith('blob:')
       ) {
         try {
-          stopExternalAudio();
           externalAudioPlayer = new Audio(mediaUrl);
-          externalAudioPlayer.muted = isSoundMuted;
+          externalAudioPlayer.volume = getMasterVolume();
+          externalAudioPlayer.muted = (getMasterVolume() === 0);
           externalAudioPlayer.play().catch(() => {});
           return;
         } catch (e) {}
@@ -2032,10 +2367,10 @@
       initAudio();
       if (mediaUrl === 'synth:80s_arpeggio') {
         const arp = [220.0, 261.63, 329.63, 440.0, 329.63, 261.63, 293.66, 349.23, 440.0, 587.33];
-        arp.forEach((freq, idx) => setTimeout(() => playTone(freq, 0.16, 'sawtooth', 0.15), idx * 160));
+        synthNoteTimeouts = arp.map((freq, idx) => setTimeout(() => playTone(freq, 0.16, 'sawtooth', 0.15), idx * 160));
       } else {
         const scale = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25];
-        scale.forEach((freq, idx) => setTimeout(() => playTone(freq, 0.20, 'square', 0.15), idx * 210));
+        synthNoteTimeouts = scale.map((freq, idx) => setTimeout(() => playTone(freq, 0.20, 'square', 0.15), idx * 210));
       }
     }
 
@@ -2133,7 +2468,7 @@
 
     function renderTacticalAlertModal() {
       const banner = document.getElementById('modalTacticalBanner');
-      if (gameState.tacticalAlert && gameState.tacticalAlert.active) {
+      if (gameState.isGameLaunched && gameState.tacticalAlert && gameState.tacticalAlert.active) {
         document.getElementById('tacticalBannerTeam').innerText = `TEAM ${gameState.tacticalAlert.team.toUpperCase()} HAS FORCED THE CLOCK!`;
         document.getElementById('tacticalBannerPlayer').innerText = gameState.tacticalAlert.player;
         banner.classList.remove('hidden');
@@ -2230,6 +2565,7 @@
         window.showDosModal("HOST AUTHORITY REQUIRED", "Only the authenticated Host Master can pause or resume the match clock.");
         return;
       }
+      if (!gameState.isGameLaunched) return;
       window.sfxKeyClick();
       sendHostAction('TOGGLE_PAUSE');
     };
@@ -2298,6 +2634,7 @@
 
     window.triggerHostEndMatch = function() {
       if (myRole !== 'host' || !isHostAuthenticated) return;
+      if (!gameState.isGameLaunched) return;
       window.sfxKeyClick();
       victoryDismissedForGame = false;
       stopExternalAudio();
@@ -2307,7 +2644,7 @@
     function renderVictoryModal() {
       const modal = document.getElementById('modalVictory');
       const btnReset = document.getElementById('btnVictoryReset');
-      if (gameState.phase === 'GAME_OVER' && !victoryDismissedForGame) {
+      if (gameState.isGameLaunched && gameState.phase === 'GAME_OVER' && !victoryDismissedForGame) {
         const winner = gameState.scores.blue > gameState.scores.red
           ? "TEAM BLUE"
           : gameState.scores.red > gameState.scores.blue
@@ -2322,7 +2659,7 @@
           btnReset.classList.add('hidden');
         }
         modal.classList.remove('hidden');
-      } else if (gameState.phase !== 'GAME_OVER') {
+      } else {
         modal.classList.add('hidden');
       }
     }
@@ -2336,6 +2673,29 @@
        DECK BUILDER / JSON MANAGER & BASE64 UPLOADER
     -------------------------------------------------------------- */
     let activeDeckTab = 0;
+
+    function normalizeClientDeck(rawDeck) {
+      const tiers = [200, 400, 600, 800, 1000];
+      return [0, 1, 2, 3, 4, 5].map((catIdx) => {
+        const rawCat = (Array.isArray(rawDeck) && rawDeck[catIdx] && typeof rawDeck[catIdx] === 'object')
+          ? rawDeck[catIdx]
+          : { category: `CAT 0${catIdx + 1}`, clues: [] };
+        const rawClues = Array.isArray(rawCat.clues) ? rawCat.clues : [];
+        return {
+          category: String(rawCat.category || `CAT 0${catIdx + 1}`).trim().slice(0, 40) || `CAT 0${catIdx + 1}`,
+          clues: tiers.map((val, cIdx) => {
+            const c = (rawClues[cIdx] && typeof rawClues[cIdx] === 'object') ? rawClues[cIdx] : {};
+            return {
+              value: val,
+              type: ['text', 'image', 'audio'].includes(c.type) ? c.type : 'text',
+              q: String(c.q ?? ''),
+              a: String(c.a ?? ''),
+              mediaUrl: String(c.mediaUrl ?? '')
+            };
+          })
+        };
+      });
+    }
 
     function formatBase64Summary(dataUri) {
       const mimeMatch = /^data:([^;]+);base64,/i.exec(dataUri);
@@ -2415,6 +2775,20 @@
       }
     };
 
+    window.clearDeckMediaAsset = function(idx) {
+      if (!hostEditableDeck) return;
+      window.sfxKeyClick();
+      hostEditableDeck[activeDeckTab].clues[idx].mediaUrl = '';
+      hostEditableDeck[activeDeckTab].clues[idx].type = 'text';
+      const mediaInput = document.getElementById(`deckMediaInput_${idx}`);
+      if (mediaInput) {
+        mediaInput.value = '';
+        mediaInput.dataset.hasBase64 = 'false';
+      }
+      const typeSelect = document.getElementById(`deckTypeSelect_${idx}`);
+      if (typeSelect) typeSelect.value = 'text';
+    };
+
     function renderDeckEditor() {
       if (!hostEditableDeck) return;
       const tabsBox = document.getElementById('deckCategoryTabs');
@@ -2468,6 +2842,7 @@
                   [ 📁 UPLOAD FILE ]
                   <input type="file" accept="image/*,audio/*" class="hidden" onchange="appHandleMediaFileUpload(event, ${idx})">
                 </label>
+                <button type="button" onclick="clearDeckMediaAsset(${idx})" class="dos-btn dos-btn-red px-2 py-0.5 text-xs" title="Clear media asset">[ ✕ ]</button>
               </div>
             </div>
           </div>
@@ -2535,7 +2910,8 @@
         try {
           const parsed = JSON.parse(event.target.result);
           if (Array.isArray(parsed) && parsed.length === 6) {
-            hostEditableDeck = parsed;
+            hostEditableDeck = normalizeClientDeck(parsed);
+            activeDeckTab = 0;
             renderDeckEditor();
             sendHostAction('UPDATE_DECK', { deck: hostEditableDeck });
           } else {
@@ -2571,6 +2947,7 @@
       const msgModalOpen = !document.getElementById('modalDosMessage').classList.contains('hidden');
       const lobbyModalOpen = !document.getElementById('modalLobby').classList.contains('hidden');
       const deckModalOpen = !document.getElementById('modalDeckManager').classList.contains('hidden');
+      const waitingRoomOpen = !document.getElementById('waitingRoomOverlay').classList.contains('hidden');
 
       if (msgModalOpen) {
         if (e.key === 'Enter' && activeModalConfirmFn) {
@@ -2589,6 +2966,31 @@
         return;
       }
 
+      if (lobbyModalOpen && e.target.id === 'lobbyPlayerNameInput' && e.key === 'Enter') {
+        e.preventDefault();
+        if (myRole === 'host' && isHostAuthenticated) {
+          syncCallsignInputs(e.target.value);
+          closeLobbyModal();
+          quickSwitchView('host');
+        } else {
+          joinRole(myRole);
+        }
+        return;
+      }
+
+      if (waitingRoomOpen && e.target.id === 'lobbyWaitingHostPin' && e.key === 'Enter') {
+        e.preventDefault();
+        joinHostFromWaitingRoom();
+        return;
+      }
+
+      if (waitingRoomOpen && e.target.id === 'waitingRoomNameInput' && e.key === 'Enter') {
+        e.preventDefault();
+        applyCallsignFromWaitingRoom();
+        e.target.blur();
+        return;
+      }
+
       if (isFormElement) {
         if (e.key === 'Escape') {
           e.target.blur();
@@ -2599,6 +3001,10 @@
       if (e.key === 'Escape') {
         if (deckModalOpen) { closeDeckModal(); return; }
         if (lobbyModalOpen) { closeLobbyModal(); return; }
+        if (!gameState.isGameLaunched && isHostPeekingBoard) {
+          togglePeekBoard(false);
+          return;
+        }
         if (myRole === 'host' && isHostAuthenticated && gameState.phase === 'HOST_CONFIRM') {
           e.preventDefault();
           hostConfirmClueExecution(false);
@@ -2632,15 +3038,20 @@
     }
 
     window.addEventListener('load', () => {
-      const nameInput = document.getElementById('lobbyPlayerNameInput');
-      if (nameInput) nameInput.value = myPlayerName;
+      syncCallsignInputs(myPlayerName);
 
+      const waitingNameInput = document.getElementById('waitingRoomNameInput');
+      const lobbyNameInput = document.getElementById('lobbyPlayerNameInput');
+      if (waitingNameInput) {
+        waitingNameInput.addEventListener('input', (e) => syncCallsignInputs(e.target.value));
+      }
+      if (lobbyNameInput) {
+        lobbyNameInput.addEventListener('input', (e) => syncCallsignInputs(e.target.value));
+      }
+
+      updateVolumeUI();
       applyRoleUI(myRole);
       renderAll();
-
-      if (!hasSavedRole) {
-        openLobbyModal();
-      }
     });
   </script>
 </body>
